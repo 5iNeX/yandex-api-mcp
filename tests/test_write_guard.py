@@ -116,3 +116,16 @@ def test_write_guard_allows_join_yclid_read_only_with_existing_request_id_and_no
         "join.hf.direct_vs_metrica_by_yclid",
         {"counter_id": "1", "date_from": "2026-02-01", "date_to": "2026-02-02", "request_id": "123", "cleanup": False},
     )
+
+
+@pytest.mark.parametrize('action', ['clean', 'cancel'])
+def test_public_logs_export_cannot_delete_or_cancel(action):
+    config = _config(public_readonly=True, write_enabled=True, use_sandbox=True)
+    with pytest.raises(Exception, match='public read-only'):
+        _enforce_write_guard(config, 'metrica.logs_export', {'action': action, 'counter_id': '1', 'request_id': '2'})
+
+
+@pytest.mark.parametrize('action', ['allinfo', 'info', 'download', 'evaluate', 'create'])
+def test_logs_export_read_and_export_actions_remain_available(action):
+    config = _config(public_readonly=True)
+    _enforce_write_guard(config, 'metrica.logs_export', {'action': action})

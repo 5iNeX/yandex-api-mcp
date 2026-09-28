@@ -49,9 +49,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build public image smoke
-        run: |
-          docker build \
-            --build-arg MCP_PUBLIC_READONLY=true \
-            --build-arg MCP_EDITION=public \
-            -t yandex-direct-metrica-mcp:ci .
+      - name: Installer Docker runtime smoke (no live API)
+        run: python3 scripts/installer_smoke.py
+
+  installer-python:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        python: ["3.10", "3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install pytest
+      - run: python -m compileall -q installer
+      - run: python -m pytest -q tests/test_installer.py

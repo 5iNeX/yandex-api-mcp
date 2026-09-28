@@ -2497,6 +2497,8 @@ def _error_response(tool: str, exc: Exception) -> list[TextContent]:
 
 
 def _is_write_tool(name: str, args: dict[str, Any] | None = None) -> bool:
+    if name == "metrica.logs_export" and str((args or {}).get("action", "")).lower() in {"clean", "cancel"}:
+        return True
     if name in WRITE_TOOLS:
         return True
     if name == "join.hf.direct_vs_metrica_by_yclid":

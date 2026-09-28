@@ -4,6 +4,12 @@ All notable changes to this MCP project will be documented in this file.
 
 ## Unreleased
 
+- Fork: added a Linux server installer with a Russian `yp` project menu, independent Direct/Metrica discovery, paginated counters, manual delegated Direct login entry, registry backups and explicit linking/removal confirmations.
+- Installer: added local PKCE OAuth, protected credential files, candidate validation, startup rollback/retry, and an expiry-aware refresh timer.
+- Installer: added an optional private OpenAI Tunnel with process-only HTTP/HTTPS proxy, checksum-verified downloads, a dedicated systemd user, `LoadCredential`, fixed stdio sudo wrapper and local health/doctor checks.
+- Safety: public read-only mode now blocks Metrica Logs `clean` and `cancel`; Docker package sources use HTTPS with bounded download retries.
+- Docs/CI: added English/Russian install guides and isolated Docker runtime acceptance checks without live provider APIs.
+
 ## 2.0.17 - 2026-08-10
 
 - Docs: recorded Symphony Level B happy-path release evidence for `GEO-38 -> GEO-39 -> GEO-40 -> v2.0.15` and added a session note for the first fully published `feature -> PR -> release` smoke chain.

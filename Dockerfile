@@ -10,7 +10,8 @@ ARG MCP_EDITION=public
 ARG MCP_PLUGIN_PIP=""
 
 # Security: pull OS security updates and upgrade pip tooling (wheel has known CVEs).
-RUN apt-get update \
+RUN sed -i "s|http://deb.debian.org|https://deb.debian.org|g" /etc/apt/sources.list.d/debian.sources \
+  && apt-get -o Acquire::Retries=3 -o Acquire::https::Timeout=30 update \
   && apt-get upgrade -y \
   && rm -rf /var/lib/apt/lists/* \
   && pip install --no-cache-dir --upgrade pip wheel \

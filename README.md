@@ -1,5 +1,24 @@
 # yandex-direct-metrica-mcp
 
+## Русский установщик Linux + ChatGPT Tunnel (this fork)
+
+[Fork](https://github.com/5iNeX/yandex-direct-metrica-mcp) of the Apache-2.0 upstream by [georgy-agaev](https://github.com/georgy-agaev/yandex-direct-metrica-mcp). Install on Debian/Ubuntu VM, VPS or Docker-capable LXC with your own credentials:
+
+```bash
+git clone https://github.com/5iNeX/yandex-direct-metrica-mcp.git
+cd yandex-direct-metrica-mcp
+sudo ./install.sh --install-deps
+```
+
+Then **`yp`** opens the Russian project menu. The wizard configures local OAuth, loopback-only Docker MCP, and an optional OpenAI Tunnel systemd service. No shared tokens, customer registry, public MCP ports or VPN setup.
+
+**[Инструкция на русском](docs/ru/installer.md) · [English installer guide](docs/installer.md)**
+
+Each owner must obtain their Yandex app/API approval, OpenAI runtime key and workspace association. Private Tunnel connections use ChatGPT developer mode; public catalog publication is a separate process.
+
+---
+
+
 MCP server for **Yandex Direct + Yandex Metrica + Yandex Wordstat + Yandex Audience** (Python).
 
 Website (docs): https://georgy-agaev.github.io/yandex-direct-metrica-mcp/
