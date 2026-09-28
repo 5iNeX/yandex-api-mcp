@@ -160,6 +160,56 @@ def install_compose_plugin():
     )
 
 
+def install_docker_engine(os_file=Path("/etc/os-release"), apt_root=Path("/etc/apt")):
+    release = {}
+    for line in os_file.read_text().splitlines():
+        if "=" in line:
+            key, value = line.split("=", 1)
+            release[key] = value.strip().strip('"').strip("'")
+    distro = release.get("ID")
+    suite = release.get("VERSION_CODENAME", "")
+    if distro not in ("debian", "ubuntu") or not re.fullmatch(r"[a-z]+", suite):
+        raise RuntimeError(
+            "Автоматическая установка Docker поддерживает Debian/Ubuntu. Установи Docker Engine 28+ вручную."
+        )
+    arch = subprocess.check_output(["dpkg", "--print-architecture"], text=True).strip()
+    if arch not in ("amd64", "arm64"):
+        raise RuntimeError("Поддерживаются amd64/arm64")
+    key = apt_root / "keyrings/yandex-mcp-docker.asc"
+    source = apt_root / "sources.list.d/yandex-mcp-docker.sources"
+    expected = f"Types: deb\nURIs: https://download.docker.com/linux/{distro}\nSuites: {suite}\nComponents: stable\nArchitectures: {arch}\nSigned-By: {key}\n"
+    if source.exists() and source.read_text() != expected:
+        raise RuntimeError(
+            "Существующий apt source отличается; установщик его не заменяет"
+        )
+    key.parent.mkdir(parents=True, exist_ok=True, mode=0o755)
+    with urllib.request.urlopen(
+        "https://download.docker.com/linux/" + distro + "/gpg", timeout=30
+    ) as response:
+        public_key = response.read()
+    if b"BEGIN PGP PUBLIC KEY BLOCK" not in public_key:
+        raise RuntimeError("Получен некорректный публичный ключ Docker")
+    key.write_bytes(public_key)
+    key.chmod(0o644)
+    source.parent.mkdir(parents=True, exist_ok=True)
+    source.write_text(expected)
+    source.chmod(0o644)
+    subprocess.run(["apt-get", "update"], check=True)
+    subprocess.run(
+        [
+            "apt-get",
+            "install",
+            "-y",
+            "docker-ce",
+            "docker-ce-cli",
+            "containerd.io",
+            "docker-buildx-plugin",
+            "docker-compose-plugin",
+        ],
+        check=True,
+    )
+
+
 def dependencies():
     if not shutil.which("apt-get"):
         raise RuntimeError("Для --install-deps нужен Debian/Ubuntu с apt-get")
@@ -169,21 +219,19 @@ def dependencies():
         check=True,
     )
     if not shutil.which("docker"):
-        subprocess.run(["apt-get", "install", "-y", "docker.io"], check=True)
+        install_docker_engine()
     if subprocess.run(
         ["docker", "compose", "version"], capture_output=True, check=False
     ).returncode:
-        if (
-            subprocess.run(
-                ["apt-cache", "show", "docker-compose-v2"],
-                capture_output=True,
-                check=False,
-            ).returncode
-            == 0
-        ):
-            subprocess.run(
-                ["apt-get", "install", "-y", "docker-compose-v2"], check=True
-            )
+        for package in ("docker-compose-plugin", "docker-compose-v2"):
+            if (
+                subprocess.run(
+                    ["apt-cache", "show", package], capture_output=True, check=False
+                ).returncode
+                == 0
+            ):
+                subprocess.run(["apt-get", "install", "-y", package], check=True)
+                break
         else:
             install_compose_plugin()
     subprocess.run(["docker", "compose", "version"], check=True)
@@ -213,7 +261,7 @@ def main():
     parser.add_argument(
         "--install-deps",
         action="store_true",
-        help="Установить Docker из пакетного репозитория дистрибутива",
+        help="Установить отсутствующий Docker из официального apt-репозитория",
     )
     parser.add_argument(
         "--no-setup",
@@ -288,7 +336,11 @@ def main():
     if not Path("/usr/bin/docker").exists():
         parser.error("Ожидается Docker Engine в /usr/bin/docker")
     subprocess.run(["docker", "compose", "version"], check=True)
-    subprocess.run(["docker", "info", "--format", "{{.ServerVersion}}"], check=True)
+    version = subprocess.check_output(
+        ["docker", "info", "--format", "{{.ServerVersion}}"], text=True
+    ).strip()
+    if int(version.split(".")[0]) < 28:
+        parser.error("Нужен Docker Engine 28+: обнови существующий Docker отдельно")
     prefix = prepare(args.prefix, args.project_name, args.port)
     for name in ("yp", "yandex-project"):
         (Path("/usr/bin") / name).symlink_to(prefix / "bin/yp")

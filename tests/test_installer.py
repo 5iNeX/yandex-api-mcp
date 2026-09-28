@@ -7,12 +7,13 @@ import subprocess
 import sys
 import urllib.error
 import urllib.parse
+import urllib.request
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
-from installer.install import prepare
+from installer.install import install_docker_engine, prepare
 from installer.yandex_setup import app, auth, common, projects, tunnel
 
 
@@ -412,3 +413,26 @@ def test_http_api_errors_keep_reason_and_hide_token(runtime, monkeypatch):
     text = str(error.value)
     assert "403" in text and "access_denied" in text
     assert token not in text
+
+
+def test_fresh_engine_uses_signed_official_repo_without_removing_packages(
+    tmp_path, monkeypatch
+):
+    os_file = tmp_path / "os-release"
+    os_file.write_text("ID=debian\nVERSION_CODENAME=bookworm\n")
+    monkeypatch.setattr(subprocess, "check_output", lambda *a, **kw: "amd64\n")
+    calls = []
+    monkeypatch.setattr(subprocess, "run", lambda args, **kw: calls.append(args))
+    monkeypatch.setattr(
+        urllib.request,
+        "urlopen",
+        lambda *a, **kw: io.BytesIO(b"-----BEGIN PGP PUBLIC KEY BLOCK-----\nfixture\n"),
+    )
+    apt_root = tmp_path / "apt"
+    install_docker_engine(os_file, apt_root)
+    source = (apt_root / "sources.list.d/yandex-mcp-docker.sources").read_text()
+    assert "https://download.docker.com/linux/debian" in source
+    assert "Suites: bookworm" in source and "Signed-By:" in source
+    assert "docker-ce" in calls[-1] and "docker-compose-plugin" in calls[-1]
+    assert all("remove" not in call for call in calls)
+    assert (apt_root / "keyrings/yandex-mcp-docker.asc").stat().st_mode & 0o777 == 0o644

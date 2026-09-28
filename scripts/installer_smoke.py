@@ -9,7 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from installer.install import prepare
-from installer.yandex_setup import common
+from installer.yandex_setup import common, projects
 
 
 def main():
@@ -26,7 +26,9 @@ def main():
                 tools = common.tools_list(transport)
                 assert any(t["name"] == "accounts.list" for t in tools)
                 print(f"{transport}: tools/list OK ({len(tools)})")
-            assert common.rpc_sse("accounts.list")["accounts"] == []
+            assert (
+                projects.data_payload(common.rpc_sse("accounts.list"))["accounts"] == []
+            )
             (root / "state/accounts.json").write_text(
                 json.dumps(
                     {
@@ -38,7 +40,9 @@ def main():
             )
             common.rpc_sse("accounts.reload")
             assert (
-                common.rpc_sse("accounts.list")["accounts"][0]["id"]
+                projects.data_payload(common.rpc_sse("accounts.list"))["accounts"][0][
+                    "id"
+                ]
                 == "fixture-project"
             )
             # This must be denied before any provider request is attempted.

@@ -7,7 +7,7 @@ This fork of [georgy-agaev/yandex-direct-metrica-mcp](https://github.com/georgy-
 ## Supported environment
 
 - Debian 12/13 or Ubuntu 22.04/24.04, Python 3.10+, systemd.
-- Linux amd64 or arm64, root/sudo, Docker Engine with the Compose plugin.
+- Linux amd64 or arm64, root/sudo, Docker Engine 28+ with the Compose plugin.
 - VM, VPS, bare metal, or an LXC already capable of running Docker. For LXC, its administrator must enable the required nesting/container features. This installer does not provision Proxmox or change host/container networking.
 - Outbound HTTPS to Yandex, package registries, GitHub and OpenAI. An existing HTTP/HTTPS CONNECT proxy can be used **only by tunnel-client**.
 
@@ -22,9 +22,9 @@ cd yandex-direct-metrica-mcp
 sudo ./install.sh --install-deps
 ```
 
-Review the checkout before running it as root. No `curl | sh` is required. `--install-deps` installs distro packages, starts Docker, and installs an official Compose plugin with SHA256 verification when a distro plugin is unavailable. A manually downloaded Compose plugin needs manual updates; see [Docker's instructions](https://docs.docker.com/compose/install/linux/).
+Review the checkout before running it as root. No `curl | sh` is required. `--install-deps` installs required distro packages and, when Docker is absent, configures the signed official Docker apt repository and installs Engine/Compose. It starts Docker and installs an official Compose plugin with SHA256 verification when a distro plugin is unavailable. A manually downloaded Compose plugin needs manual updates; see [Docker's instructions](https://docs.docker.com/compose/install/linux/).
 
-If Docker/Compose are already configured, omit `--install-deps`. Use `--no-setup` to install files first and run `yp setup` later. An existing prefix or `yp` command causes the installer to stop rather than replace an installation. One global `yp` installation per Linux system is supported.
+Existing Docker installations are reused and never removed or automatically upgraded; Engine 28+ is required. If Docker/Compose are already configured, omit `--install-deps`. Use `--no-setup` to install files first and run `yp setup` later. An existing prefix or `yp` command causes the installer to stop rather than replace an installation. One global `yp` installation per Linux system is supported.
 
 Default runtime: `/opt/yandex-mcp`. An alternative prefix is supported in a root-owned permanent directory, for example:
 

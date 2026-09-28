@@ -6,7 +6,7 @@
 
 ## Установка
 
-Подойдут Debian 12/13 или Ubuntu 22.04/24.04, Python 3.10+, systemd, amd64/arm64. Нужны root/sudo и Docker с Compose plugin. Можно использовать VPS, VM или LXC, в котором администратор уже разрешил запуск Docker.
+Подойдут Debian 12/13 или Ubuntu 22.04/24.04, Python 3.10+, systemd, amd64/arm64. Нужны root/sudo и Docker Engine 28+ с Compose plugin. Можно использовать VPS, VM или LXC, в котором администратор уже разрешил запуск Docker.
 
 ```bash
 git clone https://github.com/5iNeX/yandex-direct-metrica-mcp.git
@@ -15,7 +15,7 @@ cd yandex-direct-metrica-mcp
 sudo ./install.sh --install-deps
 ```
 
-Сначала просмотри исходники. `--install-deps` устанавливает пакеты дистрибутива и запускает Docker. Если в репозитории нет подходящего Compose plugin, скачивает официальный бинарный файл и проверяет SHA256. Такой plugin обновляется вручную; [инструкция Docker](https://docs.docker.com/compose/install/linux/).
+Сначала просмотри исходники. `--install-deps` устанавливает нужные пакеты. Если Docker отсутствует, добавляет подписанный официальный apt-репозиторий Docker и устанавливает Engine/Compose. Существующий Docker используется без удаления и автоматического обновления; нужна версия Engine 28+. Если в репозитории нет подходящего Compose plugin, скачивает официальный бинарный файл и проверяет SHA256. Такой plugin обновляется вручную; [инструкция Docker](https://docs.docker.com/compose/install/linux/).
 
 Если Docker и Compose уже работают, можно убрать `--install-deps`. Для установки файлов без запуска мастера добавь `--no-setup`, затем выполни `yp setup`.
 
