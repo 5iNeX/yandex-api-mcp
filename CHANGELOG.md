@@ -9,7 +9,7 @@ All notable changes to this MCP project will be documented in this file.
 - Installer: added an optional private OpenAI Tunnel with process-only HTTP/HTTPS proxy, checksum-verified downloads, a dedicated systemd user, `LoadCredential`, fixed stdio sudo wrapper and local health/doctor checks.
 - Safety: public read-only mode now blocks Metrica Logs `clean` and `cancel`; Docker package sources use HTTPS with bounded download retries.
 - Installer bootstrap: uses the signed official Docker apt repository for a fresh Engine, requires Engine 28+, and preserves existing Docker deployments.
-- Docs/CI: added English/Russian install guides and isolated Docker runtime acceptance checks without live provider APIs.
+- Docs/CI: added English/Russian install guides and root install/minimal-PATH CLI checks and isolated Docker runtime acceptance checks without live provider APIs.
 
 ## 2.0.17 - 2026-08-10
 

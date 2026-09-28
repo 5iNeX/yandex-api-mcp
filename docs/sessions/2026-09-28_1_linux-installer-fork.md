@@ -9,6 +9,8 @@
 - Verified v0.0.15 configuration against official OpenAI tunnel-client source: proxy schemes are HTTP/HTTPS, not SOCKS.
 - Added public-mode guards for destructive Metrica Logs clean/cancel operations and English/Russian guides.
 - Local mocked regression suite: 280 tests passed. Installer lint, compile check, shell syntax and dry-run passed.
+- Linux CI passed: [be6e4c2](https://github.com/5iNeX/yandex-direct-metrica-mcp/actions/runs/36444753511), including Docker build, 66 tools on SSE/stdio, registry reload and destructive Logs guards. Python 3.10/3.11/3.13 installer checks passed.
+- Added a root file-install/minimal-PATH CLI gate in CI.
 - Added isolated Docker runtime acceptance checks and Python 3.10/3.11/3.13 installer CI. These never call live provider APIs.
 - No existing production deployment, customer registry, network route or authorization was changed or imported.
 
