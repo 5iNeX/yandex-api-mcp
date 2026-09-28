@@ -4,7 +4,8 @@ All notable changes to this MCP project will be documented in this file.
 
 ## Unreleased
 
-- Docs: added a full Russian root README for the fork and linked it from the English project entry point.
+- Docs: Russian README is now the root README; the English project overview is available as `README.en.md`.
+- Docs: added detailed Russian documentation for the fork's Linux installer and ChatGPT Tunnel.
 
 - Fork: added a Linux server installer with a Russian `yp` project menu, independent Direct/Metrica discovery, paginated counters, manual delegated Direct login entry, registry backups and explicit linking/removal confirmations.
 - Installer: added local PKCE OAuth, protected credential files, candidate validation, startup rollback/retry, and an expiry-aware refresh timer.

@@ -1,298 +1,147 @@
-# yandex-direct-metrica-mcp
+# Yandex Direct + Метрика MCP
 
-**[Подробный README на русском](README.ru.md)**
+[Русский](README.md) · [English](README.en.md) · [Установщик для Linux](docs/ru/installer.md) · [Руководство по MCP и инструментам upstream](https://github.com/georgy-agaev/yandex-direct-metrica-mcp)
 
-## Русский установщик Linux + ChatGPT Tunnel (this fork)
+Это публичный форк MCP-сервера для работы с данными **Яндекс Директа и Метрики** через совместимый AI-клиент. В исходном сервере также есть инструменты Wordstat, Яндекс Поиска и Аудиторий. Форк сохраняет лицензию Apache-2.0 и добавляет русский установщик Linux, управление проектами одной командой `yp` и необязательное подключение к ChatGPT через частный OpenAI Tunnel.
 
-[Fork](https://github.com/5iNeX/yandex-direct-metrica-mcp) of the Apache-2.0 upstream by [georgy-agaev](https://github.com/georgy-agaev/yandex-direct-metrica-mcp). Install on Debian/Ubuntu VM, VPS or Docker-capable LXC with your own credentials:
+Каждый владелец подключает **свои** учётные данные Яндекса и OpenAI. Здесь нет общей базы клиентов и нет встроенных ключей.
+
+## Что проще всего установить
+
+Для Debian/Ubuntu на VM, VPS или LXC, где уже можно запускать Docker:
 
 ```bash
 git clone https://github.com/5iNeX/yandex-direct-metrica-mcp.git
 cd yandex-direct-metrica-mcp
+./install.sh --plan
 sudo ./install.sh --install-deps
 ```
 
-Then **`yp`** opens the Russian project menu. The wizard configures local OAuth, loopback-only Docker MCP, and an optional OpenAI Tunnel systemd service. No shared tokens, customer registry, public MCP ports or VPN setup.
-
-**[Полный README на русском](README.ru.md) · [Инструкция по установщику](docs/ru/installer.md) · [English installer guide](docs/installer.md)**
-
-Each owner must obtain their Yandex app/API approval, OpenAI runtime key and workspace association. Private Tunnel connections use ChatGPT developer mode; public catalog publication is a separate process.
-
----
-
-
-MCP server for **Yandex Direct + Yandex Metrica + Yandex Wordstat + Yandex Audience** (Python).
-
-Website (docs): https://georgy-agaev.github.io/yandex-direct-metrica-mcp/
-
-Russian docs: https://georgy-agaev.github.io/yandex-direct-metrica-mcp/ru/
-
-Images:
-- GHCR (public): https://github.com/georgy-agaev/yandex-direct-metrica-mcp/pkgs/container/yandex-direct-metrica-mcp
-- GHCR (pro): https://github.com/georgy-agaev/yandex-direct-metrica-mcp/pkgs/container/yandex-direct-metrica-mcp-pro
-- Docker Hub (optional mirror, if configured): https://hub.docker.com/r/4georgyagaev/yandex-direct-metrica-mcp
-
-Primary UX goals:
-- Pull raw data for analytics (minimal normalization, traceable outputs).
-- Generate a practical **BI dashboard (Option 1)** as `HTML + JSON` (including multi-account dashboards).
-- Provide **BI Option 2 (PRO, plugin)**: datasets + incremental sync (warehouse/BI pipelines).
-- Make it easy to use from **Claude Code** via `claude mcp add`.
-
-## Quick start (Claude Code + Docker)
-
-### Automated setup (recommended)
-
-Run the interactive wizard — it creates `.env`, `accounts.json`, and registers the MCP server for your client (Claude Code, Claude Desktop, Cursor, Codex CLI, OpenCode, Gemini CLI):
+Команда `--plan` показывает параметры установки. После установки используй:
 
 ```bash
-python3 scripts/setup.py
+yp
 ```
 
-Or follow the manual steps below.
+Откроется русское меню для подключения Яндекса, OpenAI Tunnel и проектов мониторинга. Если серверные файлы уже установлены, `yp setup` продолжает мастер. Для диагностики служит `yp doctor`, а `yp connector` показывает Tunnel ID и шаги подключения в ChatGPT.
 
-### 1) Prepare state folder
+Подробная инструкция с требованиями к ОС, OAuth, правам, службам и восстановлению: [установка Linux и подключение ChatGPT](docs/ru/installer.md).
 
-Create a local folder for state/config (accounts registry, cache, etc):
-- Example: `/path/to/mcp-state/yandex-direct-metrica-mcp`
+### Поддерживаемая установка
 
-Create `accounts.json` (multi-account dashboards use this):
+- Debian 12/13 или Ubuntu 22.04/24.04, Python 3.10+, systemd.
+- Linux amd64 или arm64 и Docker Engine 28+ с Compose plugin.
+- VPS, VM, физический сервер или LXC, в котором администратор уже разрешил Docker.
+
+Установщик не создаёт Proxmox-контейнер, не открывает публичные MCP-порты и не перестраивает сетевые маршруты. Сервер MCP слушает `127.0.0.1:8000`. Туннель устанавливается отдельной systemd-службой. Если указан HTTP/HTTPS CONNECT proxy, его получает только процесс Tunnel.
+
+## Настройка Яндекса
+
+Мастер поддерживает Direct + Метрику, только Direct или только Метрику. Audience можно подключить дополнительно. Создай собственное OAuth-приложение в Яндексе, выдай ему нужные права и пройди вход из мастера. Client Secret, токены и код подтверждения вводятся без отображения в терминале и сохраняются локально.
+
+Используются права:
+
+- `direct:api` — для Директа. Для API Direct приложению требуется одобрение production/full доступа.
+- `metrika:read` — для чтения Метрики.
+- `audience:read` — для Audience, если она нужна.
+
+По умолчанию используется redirect URI `https://oauth.yandex.ru/verification_code`. OAuth-код обменивается на токены по authorization-code flow с PKCE. Перед переключением мастер проверяет доступ к выбранным API и ждёт запуска MCP.
+
+Можно ввести существующий access token. Для автоматического продления нужен refresh token; без него придётся повторить вход вручную. Мастер не выдаёт права Яндекса за владельца приложения и не отзывает прежнюю авторизацию.
+
+## Проекты и аккаунты
+
+Реестр проектов при установке пуст. Добавляй только те Direct-клиенты и счётчики Метрики, которые хочешь включить в собственный реестр.
+
+В меню `yp` можно:
+
+- найти доступные Direct-клиенты и счётчики Метрики;
+- добавить только Direct, только Метрику или связанный профиль;
+- связать ранее добавленные профили после подтверждения;
+- добавить Direct по известному логину, если API не показывает делегированный кабинет;
+- просмотреть записи, обновить реестр MCP или убрать запись из локального мониторинга.
+
+Сопоставление названия Direct с сайтом счётчика — подсказка. Перед связью мастер просит подтверждение. Исключение проекта из реестра не удаляет данные или настройки в Яндексе. Перед изменениями создаётся резервная копия локального реестра.
+
+API Direct не всегда перечисляет все клиентские кабинеты, к которым у пользователя есть доступ. В этом случае логин можно ввести вручную; мастер проверит доступ к чтению кампаний. Логин Direct и владелец счётчика Метрики могут быть разными.
+
+Пример записи в `accounts.json`:
+
 ```json
 {
   "accounts": [
     {
-      "id": "account_ID",
-      "name": "account_name",
-      "direct_client_login": "direc_client_login",
-      "metrica_counter_ids": ["9999999"]
+      "id": "example-project",
+      "name": "Пример сайта",
+      "direct_client_login": "example-direct-login",
+      "metrica_counter_ids": ["12345678"]
     }
   ]
 }
 ```
 
-### 2) Prepare `.env`
+Путь установщика: `/opt/yandex-mcp/state/accounts.json`. Для Direct-only оставь `metrica_counter_ids` пустым или опусти поле; для Metrica-only опусти `direct_client_login`. Команда `yp --show` показывает локальные записи, `yp --discover` ищет новые доступные объекты, `yp --verify` перезагружает реестр в MCP и сверяет результат.
 
-Copy `.env.example` to your state folder and fill in:
-- Direct/Metrica OAuth credentials
-- Audience OAuth credentials (optional)
-- Wordstat Yandex Search API credentials (optional)
+Реестр помогает выбирать проекты и строить отчёты. Он не выдаёт права в Яндекс API: доступ определяется OAuth-учётной записью и разрешениями в Яндексе.
 
-Important: **do not** commit secrets to git.
+## Подключение к ChatGPT через Tunnel
 
-### 3) Add MCP server to Claude Code
+Tunnel позволяет подключить локальный MCP-сервер к ChatGPT без публичного MCP-порта. Для этого владелец создаёт Tunnel в OpenAI, привязывает его к своему ChatGPT workspace и передаёт установщику Tunnel ID и runtime API key с правами Tunnels Read + Use.
 
-Public (read-only, safe-by-default):
 ```bash
-claude mcp add yandex-direct-metrica-mcp -- \
-  docker run --rm -i \
-    --env-file /path/to/your/.env \
-    -e MCP_ACCOUNTS_FILE=/data/accounts.json \
-    -v /path/to/your/state:/data \
-    ghcr.io/georgy-agaev/yandex-direct-metrica-mcp:latest
+yp tunnel
+yp doctor
+yp connector
 ```
 
-Pinned to a specific version:
+Перед запросом ключа Tunnel мастер проверяет HTTPS-доступ к `api.openai.com`. Если нужен proxy, укажи существующий HTTP/HTTPS CONNECT proxy: он используется только `tunnel-client`. У tunnel-client v0.0.15 адреса SOCKS не поддерживаются. Ключ администратора OpenAI для запуска Tunnel не нужен.
+
+В ChatGPT создай developer-mode app, выбери Connection: Tunnel и укажи Tunnel ID из `yp connector`. Затем попроси ChatGPT вызвать `accounts.list` или показать доступные инструменты. Для шага с developer mode нужны разрешения workspace. Публикация в публичном каталоге ChatGPT — отдельный процесс.
+
+Служба Tunnel работает от отдельного системного пользователя. Секреты передаются systemd через `LoadCredential`, а не прописываются открытым текстом в unit-файл. Docker/MCP и запросы к Яндексу используют обычный маршрут сервера; установщик не создаёт VPN.
+
+## Проверка и обслуживание
+
+| Команда | Назначение |
+| --- | --- |
+| `yp` | Открыть русское меню проектов |
+| `yp setup` | Продолжить первичную настройку |
+| `yp oauth` | Повторно подключить Яндекс OAuth |
+| `yp resume` | Повторить проверку сохранённого OAuth-кандидата |
+| `yp refresh` | Обновить OAuth-токен, если подошёл срок |
+| `yp --show` | Показать реестр без меню |
+| `yp --discover` | Найти доступные Direct-клиенты и счётчики |
+| `yp --verify` | Перезагрузить и проверить реестр MCP |
+| `yp doctor` | Проверить локальный MCP и Tunnel |
+| `yp connector` | Показать сведения для подключения ChatGPT |
+
+Для установки с настройками по умолчанию статус служб можно проверить так:
+
 ```bash
-claude mcp add yandex-direct-metrica-mcp -- \
-  docker run --rm -i \
-    --env-file /path/to/your/.env \
-    -e MCP_ACCOUNTS_FILE=/data/accounts.json \
-    -v /path/to/your/state:/data \
-    ghcr.io/georgy-agaev/yandex-direct-metrica-mcp:v1.0.0
+sudo systemctl status yandex-mcp-tunnel-yandex-mcp.service
+sudo systemctl list-timers yandex-mcp-refresh-yandex-mcp.timer
+sudo docker compose --project-name yandex-mcp \
+  --file /opt/yandex-mcp/compose.yaml ps
 ```
 
-Pro (separate artifact; intended for paid subscribers; keep the GHCR package private):
+Секретные файлы находятся в `/opt/yandex-mcp/secrets/`; каталог доступен root, файлы получают права `0600`. Не публикуй конфигурационные дампы Docker, содержимое secret-файлов или резервные копии OAuth.
+
+## Другие способы запуска
+
+Установщик в первую очередь настраивает серверный сценарий с Direct, Метрикой и необязательным Audience. Исходный MCP также поддерживает Wordstat, Яндекс Поиск и более широкий набор Direct/Metrica-инструментов. Чтобы использовать их или подключить локальный клиент на macOS/Windows, настрой сервер исходным способом:
+
 ```bash
-claude mcp add yandex-direct-metrica-mcp-pro -- \
-  docker run --rm -i \
-    --env-file /path/to/your/.env \
-    -e MCP_ACCOUNTS_FILE=/data/accounts.json \
-    -v /path/to/your/state:/data \
-    ghcr.io/georgy-agaev/yandex-direct-metrica-mcp-pro:v1.0.0
+python3 scripts/setup.py
 ```
 
-Using a locally-built image (for development):
-```bash
-docker build -t yandex-direct-metrica-mcp:local .
+Скрипт предлагает настройки для нескольких MCP-клиентов. Дополнительные параметры, переменные окружения и описание MCP-инструментов смотри в [исходном README проекта](https://github.com/georgy-agaev/yandex-direct-metrica-mcp) и документации каталога `docs/`.
 
-claude mcp add yandex-direct-metrica-mcp -- \
-  docker run --rm -i \
-    --env-file /path/to/your/.env \
-    -e MCP_ACCOUNTS_FILE=/data/accounts.json \
-    -v /path/to/your/state:/data \
-    yandex-direct-metrica-mcp:local
-```
+Публичная сборка MCP по умолчанию работает в режиме read-only для управляемых объектов. Сервер также блокирует destructive действия Logs API в public-режиме. Экспорт данных, отчёты и локальное создание файлов отчёта остаются частью аналитических сценариев. Пакет PRO и его приватные плагины в этот установщик не входят.
 
-Notes:
-- `docker build ...` produces a **public read-only** image by default.
-- If you really need a local PRO image, build with:
-  - `docker build --build-arg MCP_EDITION=pro --build-arg MCP_PUBLIC_READONLY=false -t yandex-direct-metrica-mcp:pro .`
-  - BI Option 2 is delivered via a private PRO plug-in; install it during build via `--build-arg MCP_PLUGIN_PIP="..."` (see `docs/pro-plugin.md`).
+## Исходный код и вклад
 
-Then:
-```bash
-claude mcp list
-```
+- Форк: [5iNeX/yandex-direct-metrica-mcp](https://github.com/5iNeX/yandex-direct-metrica-mcp)
+- Исходный проект: [georgy-agaev/yandex-direct-metrica-mcp](https://github.com/georgy-agaev/yandex-direct-metrica-mcp)
+- Лицензия: Apache-2.0.
 
-### 4) Generate dashboard (Option 1)
-
-Tip: Direct/Metrica data for “today” is often incomplete. For daily use, set `date_to` to **yesterday**.
-
-Ask Claude Code:
-- “Generate `dashboard.generate_option1` for all accounts for last 30 days (to yesterday), save to `/path/to/dashboards`, `all_accounts=true`, `return_data=false`, and give me the HTML path.”
-
-## What “read-only” means (Public 1.0.0 contract)
-
-Read-only means:
-- no changes to managed entities in **Direct/Metrica/Audience** (no create/update/delete of campaigns, segments, goals, etc.).
-
-Allowed side effects (still treated as read-only for the public contract):
-- **Wordstat** report-like requests (provider-side compute).
-- **Metrica Logs API** export jobs used for analysis/joins (`metrica.logs_export`) — no counter configuration changes.
-
-Public mode spec:
-- `docs/public-mode.md`
-
-## What can it do? (tools / layers)
-
-This MCP exposes two layers:
-
-### 1) Raw data access (low-level tools)
-
-The goal is to give the LLM **full access to raw reporting data** with minimal normalization:
-- `direct.*` — Yandex Direct API calls (reports, entities, dictionaries)
-- `metrica.*` — Yandex Metrica API calls (exports, reports)
-- `wordstat.*` — Yandex Wordstat API calls (keyword statistics)
-- `search_serp` — Yandex Search API Web Search SERP normalization (ads + organic)
-- `audience.*` — Yandex Audience API calls (segments, overlaps, catalogs)
-
-Output format is controlled by:
-- `MCP_CONTENT_MODE=json` (recommended for raw analysis)
-
-### 2) Human-friendly layer (high-level tools)
-
-These tools focus on practical analytics workflows:
-- `direct.hf.*` — “human-friendly” helpers over Direct (find/report presets, convenience queries)
-- `join.hf.*` — best-effort joins between Direct + Metrica (UTM / yclid)
-- `wordstat.hf.*` — keyword suggestions helpers over Wordstat
-- `audience.hf.*` — audience catalog + best-effort segment performance proxy
-- `dashboard.generate_option1` — generates a self-contained BI dashboard (`HTML + JSON`)
-
-### 3) BI Option 2 (PRO plugin): datasets + incremental sync
-
-BI Option 2 is provided by an optional **private PRO plugin** (not part of the public OSS build):
-- `dashboard.schema`
-- `dashboard.dataset.*`
-- `dashboard.sync.start` / `dashboard.sync.next` (NDJSON-friendly)
-
-See:
-- `docs/bi-option2-proposal-2026-02-03.md`
-- `docs/llm-usage-guide-pro-2026-02-03.md`
-
-To see the full list of tools in your environment:
-- In Claude Code: ask “List available tools for this MCP server” (it calls `tools/list`).
-- In this repo: see `docs/tool-coverage-2026-01-27.md`.
-
-## Environment variables (high level)
-
-Direct/Metrica OAuth (usually shared app/token):
-- `YANDEX_ACCESS_TOKEN` or `YANDEX_REFRESH_TOKEN`
-- if using refresh: `YANDEX_CLIENT_ID`, `YANDEX_CLIENT_SECRET`
-
-Audience OAuth (may be shared with Direct/Metrica, but can be separate):
-- `YANDEX_AUDIENCE_ACCESS_TOKEN` or `YANDEX_AUDIENCE_REFRESH_TOKEN`
-- if using refresh: `YANDEX_AUDIENCE_CLIENT_ID`, `YANDEX_AUDIENCE_CLIENT_SECRET`
-
-Wordstat and Web Search via Yandex Search API:
-- `YANDEX_SEARCH_API_FOLDER_ID`
-- `YANDEX_SEARCH_API_API_KEY` or `YANDEX_SEARCH_API_IAM_TOKEN`
-- optional Web Search defaults: `MCP_SEARCH_API_ENABLED`, `YANDEX_SEARCH_API_DEFAULT_REGION`
-
-Search API tools do **not** use Direct OAuth. Configure them separately:
-- the service account belongs to the target folder;
-- the service account has `search-api.webSearch.user`;
-- the API key is created for that service account;
-- if API key scopes are configured, include `yc.search-api.execute`;
-- `YANDEX_SEARCH_API_FOLDER_ID` matches that folder.
-
-If `wordstat.user_info` or any `wordstat.*` call returns 401/403, check the role/scope/folder above. For `wordstat.dynamics`, monthly `to_date` must be `YYYY-MM` or the last day of the month; weekly boundaries are provider-specific, so use raw `params` only with a confirmed provider-valid `toDate`.
-
-`search_serp` uses the same Search API credentials and returns normalized `ads`, `ads_count_top`, `ads_count_bottom`, `organic`, and `captcha`. For HTML ads, `ads[].domain` is the normalized advertiser domain, `ads[].click_url` retains the Yandex redirect when present, `ads[].type` is `text`, `product_gallery`, or `native`, and `ads[].block` is `top` or `bottom` when placement can be inferred. Use `format=html` when ads are required; raw HTML is returned only with `include_raw=true`.
-
-Multi-account registry:
-- `MCP_ACCOUNTS_FILE=/data/accounts.json`
-
-Public/pro flags:
-- Public image forces read-only (safe-by-default), but `MCP_PUBLIC_READONLY=true` remains a compatibility flag.
-- Pro writes require explicit enables:
-  - `MCP_WRITE_ENABLED=true`
-  - `HF_WRITE_ENABLED=true` (HF write tools)
-  - `HF_DESTRUCTIVE_ENABLED=true` (delete tools)
-  - Optional safety: `MCP_TWO_PHASE_WRITES=true` (write tools return a `confirm_token`; execution requires `write.confirm`)
-- Pro-only auth tools (return secrets; no storage): `MCP_AUTH_TOOLS_ENABLED=true`
-
-## CLI commands
-
-The container/entrypoint runs the MCP server (stdio by default). Local/venv entrypoints:
-- `yandex-direct-metrica-mcp` (preferred)
-- `mcp-yandex-ad` (legacy alias)
-
-The CLI also provides:
-- `auth` — interactive OAuth helper (opens auth URL and exchanges code)
-  - `--flow hybrid` (default) uses loopback callback when `YANDEX_REDIRECT_URI` is a local URL (example: `http://127.0.0.1:8765/callback`), otherwise falls back to manual code copy/paste.
-  - Tip: set `--output-env /path/to/.env` to avoid printing tokens to stdout.
-
-## Public vs Pro
-
-This repo ships **two artifacts**:
-
-- Public: `yandex-direct-metrica-mcp` (safe-by-default read-only).
-  - Contract: `tests/snapshots/public_tools_v1.json`
-- Pro: `yandex-direct-metrica-mcp-pro` (writes still require explicit env guardrails) + private PRO plug-ins (e.g., BI Option 2).
-
-See:
-- `docs/public-vs-pro.md`
-- `docs/compatibility-semver.md`
-
-## Docs (developer notes / project history)
-
-- Setup notes: `docs/README-setup-2026-01-14.md`
-- Claude Code setup (local/dev): `docs/claude-code-setup-2026-01-27.md`
-- Publishing (Docker + registries): `docs/publishing-docker-2026-01-29.md`
-- Quickstart: `docs/quickstart.md`
-- Dashboard: `docs/dashboard-option1.md`
-- Audience: `docs/audience-2026-02-03.md`
-- BI Option 2 (proposal, PRO): `docs/bi-option2-proposal-2026-02-03.md`
-- LLM usage guide (public read-only): `docs/llm-usage-guide-2026-02-03.md`
-- LLM usage guide (PRO): `docs/llm-usage-guide-pro-2026-02-03.md`
-- Public vs Pro: `docs/public-vs-pro.md`
-- Claude Code prompt examples: `examples/claude-code-prompts.md`
-
-## Development
-
-Run locally (without Docker):
-- `python -m venv .venv && .venv/bin/pip install -e .`
-- `.venv/bin/yandex-direct-metrica-mcp --env-file /path/to/.env` (preferred)
-- `.venv/bin/mcp-yandex-ad --env-file /path/to/.env` (legacy alias)
-
-CI and publishing:
-- CI: `.github/workflows/ci.yml`
-- Docker publish (public): `.github/workflows/docker-publish-public.yml`
-- Docker publish (pro, gated): `.github/workflows/docker-publish-pro.yml`
-
-## Documentation languages
-
-- English docs live in `docs/` (this branch).
-- Russian docs live in `docs/ru/` (this branch) and are published under `/ru/` on the docs website.
-
-## Disclaimer (affiliation / trademarks)
-
-- This project is not affiliated with, endorsed by, or sponsored by Yandex.
-- Yandex, Yandex.Direct, Yandex.Metrica are trademarks of their respective owners.
-
-## Compliance / Terms
-
-- You are responsible for complying with Yandex Direct API and Yandex Metrica terms, policies, and applicable laws.
-- Direct and Metrica API calls are performed **on your behalf** using your OAuth credentials; you must have proper access and accept/comply with the relevant API terms.
-- External service docs/terms (reference):
-  - Direct API docs: `https://yandex.com/dev/direct/`
-  - Metrica API docs: `https://yandex.com/dev/metrika/`
+Перед отправкой изменений запусти тесты и не добавляй в репозиторий `.env`, токены, Client Secret, runtime API key Tunnel, реальные записи аккаунтов или данные аналитики.
