@@ -4,6 +4,8 @@ All notable changes to this MCP project will be documented in this file.
 
 ## Unreleased
 
+- Docs: added a full Russian root README for the fork and linked it from the English project entry point.
+
 - Fork: added a Linux server installer with a Russian `yp` project menu, independent Direct/Metrica discovery, paginated counters, manual delegated Direct login entry, registry backups and explicit linking/removal confirmations.
 - Installer: added local PKCE OAuth, protected credential files, candidate validation, startup rollback/retry, and an expiry-aware refresh timer.
 - Installer: added an optional private OpenAI Tunnel with process-only HTTP/HTTPS proxy, checksum-verified downloads, a dedicated systemd user, `LoadCredential`, fixed stdio sudo wrapper and local health/doctor checks.
