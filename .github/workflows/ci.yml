@@ -51,9 +51,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install files and verify short command in a minimal PATH
         run: |
-          sudo ./install.sh --prefix /opt/yp-installer-ci --project-name yp-ci --no-setup
+          sudo ./install.sh --prefix /srv/yp-installer-ci --project-name yp-ci --no-setup
           env PATH=/usr/bin:/bin yp --help
-          sudo python3 -c "from pathlib import Path; root=Path('/opt/yp-installer-ci'); assert (root/'secrets').stat().st_mode & 0o777 == 0o700; assert (root/'secrets/yandex.env').stat().st_mode & 0o777 == 0o600"
+          sudo python3 -c "from pathlib import Path; root=Path('/srv/yp-installer-ci'); assert (root/'secrets').stat().st_mode & 0o777 == 0o700; assert (root/'secrets/yandex.env').stat().st_mode & 0o777 == 0o600"
       - name: Installer Docker runtime smoke (no live API)
         run: python3 scripts/installer_smoke.py
 
