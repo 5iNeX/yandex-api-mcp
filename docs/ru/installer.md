@@ -1,5 +1,7 @@
 # Установщик Yandex MCP для Linux
 
+> Эта страница описывает прежний установщик Direct/Metrika. Для единого yandex-api-mcp используйте [новую инструкцию](unified-deployment.md).
+
 [English instructions](../installer.md)
 
 Этот [форк](https://github.com/5iNeX/yandex-direct-metrica-mcp) добавляет русский установщик и меню проектов к [исходному Yandex MCP](https://github.com/georgy-agaev/yandex-direct-metrica-mcp). Лицензия Apache-2.0 сохранена. У каждого пользователя — собственные OAuth и OpenAI Tunnel.

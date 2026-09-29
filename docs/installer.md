@@ -1,5 +1,7 @@
 # Linux installer (fork)
 
+> This page covers the legacy Direct/Metrika installer. For the unified yandex-api-mcp, use [unified deployment](unified-deployment.md).
+
 [Русская инструкция](ru/installer.md)
 
 This fork of [georgy-agaev/yandex-direct-metrica-mcp](https://github.com/georgy-agaev/yandex-direct-metrica-mcp) adds a Russian terminal installer and project manager. The upstream MCP remains Apache-2.0. Each installation uses its own Yandex authorization and its own OpenAI Tunnel; the repository contains no deployment credentials or customer registry.

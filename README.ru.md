@@ -1,5 +1,5 @@
-# Yandex Direct + Метрика MCP
+# yandex-api-mcp
 
 Полная русская документация находится в корневом файле [README.md](README.md). Английская версия: [README.en.md](README.en.md).
 
-Инструкция по установщику: [установка Linux и подключение ChatGPT](docs/ru/installer.md).
+Новая инструкция по установке: [единый сервер и подключение ChatGPT](docs/ru/unified-deployment.md). [Старый установщик](docs/ru/installer.md) оставлен для прежнего Direct/Metrika релиза.
