@@ -2,6 +2,8 @@
 
 Date: 2026-09-30. Implementation commit: `ceac3044120acf9c9af3c61b4b2171836865f9ba`. The final documentation/deployment commit SHA is reported in the delivery response; a commit cannot contain its own SHA without changing it.
 
+GitHub: [new yandex-api-mcp repository](https://github.com/5iNeX/yandex-api-mcp), with the reviewed `codex/yandex-api-mcp` branch; the same branch is pushed to the original fork and has a [draft PR](https://github.com/5iNeX/yandex-direct-metrica-mcp/pull/1). Neither repository's existing main branch was merged.
+
 ## Architecture and reason
 
 `webkoth/yandex-mcp` is the main TypeScript core for Webmaster, Direct and Metrika. The prior Python server is retained as a read-oriented MCP adapter for Wordstat, Audience, Search API and additional Direct/Metrika tools. A Node gateway exposes one stdio/SSE MCP endpoint and merges `tools/list` and `tools/call`. This avoids rewriting working clients. [Technical audit and alternatives](docs/audit-2026-09-30.md).

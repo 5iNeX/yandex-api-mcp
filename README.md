@@ -20,9 +20,8 @@
 Нужны Docker Engine, Compose v2 и Python 3. Из этой ветки:
 
 ```bash
-git clone https://github.com/5iNeX/yandex-direct-metrica-mcp.git
-cd yandex-direct-metrica-mcp
-git switch codex/yandex-api-mcp
+git clone https://github.com/5iNeX/yandex-api-mcp.git
+cd yandex-api-mcp
 sudo ./install.sh
 sudo yp oauth
 sudo yp service start
