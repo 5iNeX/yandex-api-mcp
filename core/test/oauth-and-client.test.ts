@@ -120,3 +120,22 @@ test("HTTP 401 refreshes once and retries the read with the new token", async ()
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("HTTP 429 on a read uses backoff and retries", async () => {
+  const priorFetch = globalThis.fetch;
+  process.env.YANDEX_OAUTH_TOKEN = "test";
+  initRegistry();
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls += 1;
+    return calls === 1 ? new Response("rate limit", { status: 429, headers: { "Retry-After": "0" } }) :
+      new Response('{"ok":true}', { status: 200 });
+  };
+  try {
+    assert.deepEqual(await getClient().request("GET", "/v4/user"), { ok: true });
+    assert.equal(calls, 2);
+  } finally {
+    globalThis.fetch = priorFetch;
+    delete process.env.YANDEX_OAUTH_TOKEN;
+  }
+});

@@ -144,18 +144,19 @@ class YandexClient {
       }
 
       if (!response.ok) {
-        let errorMessage = `HTTP ${response.status} on ${method} ${path}`;
+        const requestId = response.headers.get("RequestId") || response.headers.get("X-Request-Id");
+        let detail = "Request failed";
         try {
           const errorBody = (await response.json()) as YandexErrorResponse;
           if (errorBody.error_code || errorBody.error_message) {
-            errorMessage = `${errorBody.error_code ?? "UNKNOWN"}: ${errorBody.error_message ?? errorBody.message ?? "No message"}`;
+            detail = `${errorBody.error_code ?? "UNKNOWN"}: ${errorBody.error_message ?? errorBody.message ?? "No message"}`;
           } else if (errorBody.message) {
-            errorMessage = errorBody.message;
+            detail = errorBody.message;
           }
         } catch {
           // Response body was not JSON, use default error message
         }
-        throw new Error(errorMessage);
+        throw new Error(`HTTP ${response.status} on ${method} ${path}${requestId ? ` (RequestId ${requestId})` : ""}: ${detail}`);
       }
 
       // Handle 204 No Content
@@ -215,13 +216,20 @@ class YandexClient {
     }
     const form = new FormData();
     form.append("file", new Blob([fileContent], { type: "text/csv" }), fileName);
-    const response = await fetch(url.toString(), {
+    let response = await fetch(url.toString(), {
       method: "POST",
       headers: { Authorization: buildAuthHeader("OAuth", await this.token()) },
       body: form,
+      signal: AbortSignal.timeout(60000),
     });
+    if (response.status === 401 && !this.project.token) {
+      response = await fetch(url.toString(), {
+        method: "POST", headers: { Authorization: buildAuthHeader("OAuth", await this.token(true)) },
+        body: form, signal: AbortSignal.timeout(60000)
+      });
+    }
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status} on POST ${path}: ${await response.text()}`);
+      throw new Error(`HTTP ${response.status} on POST ${path}; verify Metrika scope, counter access and CSV format`);
     }
     return (await response.json()) as T;
   }
@@ -229,11 +237,16 @@ class YandexClient {
   // Logs API part download returns raw TSV, not JSON.
   async metrikaDownload(path: string): Promise<string> {
     const url = new URL(path, METRIKA_BASE_URL);
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: buildAuthHeader("OAuth", await this.token()) },
+    let response = await fetch(url.toString(), {
+      headers: { Authorization: buildAuthHeader("OAuth", await this.token()) }, signal: AbortSignal.timeout(60000)
     });
+    if (response.status === 401 && !this.project.token) {
+      response = await fetch(url.toString(), {
+        headers: { Authorization: buildAuthHeader("OAuth", await this.token(true)) }, signal: AbortSignal.timeout(60000)
+      });
+    }
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status} on GET ${path}: ${await response.text()}`);
+      throw new Error(`HTTP ${response.status} on GET ${path}; verify Metrika scope and counter access`);
     }
     return response.text();
   }
@@ -276,7 +289,11 @@ class YandexClient {
       skipReportSummary: "true",
     };
     if (this.project.direct.client_login) headers["Client-Login"] = this.project.direct.client_login;
-    const res = await fetch(url, { method: "POST", headers, body: JSON.stringify(body), signal: AbortSignal.timeout(60000) });
+    let res = await fetch(url, { method: "POST", headers, body: JSON.stringify(body), signal: AbortSignal.timeout(60000) });
+    if (res.status === 401 && !this.project.token) {
+      headers.Authorization = buildAuthHeader("Bearer", await this.token(true));
+      res = await fetch(url, { method: "POST", headers, body: JSON.stringify(body), signal: AbortSignal.timeout(60000) });
+    }
     const units = res.headers.get("Units");
     if (units) this.lastUnits = units;
     const retryHeader = res.headers.get("retryIn");

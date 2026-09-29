@@ -24,7 +24,7 @@ The fork's Linux installer, `yp` concept, Docker deployment and OpenAI Tunnel in
 | Check | Result |
 |---|---|
 | `pytest -q` | 282 passed |
-| `npm run build && npm test` | 22 TypeScript core + 2 gateway tests passed |
+| `npm run build && npm test` | 23 TypeScript core + 2 gateway tests passed |
 | `npm audit --omit=dev` in core and gateway | 0 vulnerabilities after lockfile update |
 | Local Docker build and health | Pass, both backends ready |
 | Remote MCP initialize, tools/list, tool call via SSE | Pass; 151 public tools |
