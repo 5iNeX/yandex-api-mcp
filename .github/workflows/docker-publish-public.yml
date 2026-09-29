@@ -10,7 +10,7 @@ permissions:
   packages: write
 
 env:
-  GHCR_IMAGE_PUBLIC: ghcr.io/${{ github.repository_owner }}/yandex-direct-metrica-mcp
+  GHCR_IMAGE_PUBLIC: ghcr.io/${{ github.repository_owner }}/yandex-api-mcp
 
 jobs:
   build-and-push:
@@ -59,7 +59,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            docker.io/${{ env.DOCKERHUB_USERNAME }}/yandex-direct-metrica-mcp
+            docker.io/${{ env.DOCKERHUB_USERNAME }}/yandex-api-mcp
           tags: |
             type=ref,event=tag
             type=raw,value=latest

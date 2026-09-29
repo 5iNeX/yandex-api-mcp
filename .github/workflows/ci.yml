@@ -45,17 +45,34 @@ jobs:
         run: |
           pytest -q
 
+  typescript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm --prefix core ci
+      - run: npm run build
+      - run: npm test
+
   docker-public-smoke:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install files and verify short command in a minimal PATH
+      - name: Build public image
+        run: docker build -t yandex-api-mcp:ci .
+      - name: MCP health smoke with dummy credentials
         run: |
-          sudo ./install.sh --prefix /srv/yp-installer-ci --project-name yp-ci --no-setup
-          env PATH=/usr/bin:/bin yp --help
-          sudo python3 -c "from pathlib import Path; root=Path('/srv/yp-installer-ci'); assert (root/'secrets').stat().st_mode & 0o777 == 0o700; assert (root/'secrets/yandex.env').stat().st_mode & 0o777 == 0o600"
-      - name: Installer Docker runtime smoke (no live API)
-        run: python3 scripts/installer_smoke.py
+          docker run -d --name yandex-api-mcp-ci -e YANDEX_OAUTH_TOKEN=dummy -e YANDEX_ACCESS_TOKEN=dummy -e MCP_BIND_HOST=0.0.0.0 -p 127.0.0.1:8001:8001 yandex-api-mcp:ci
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8001/healthz | grep -q '"status":"ok"'; then exit 0; fi
+            sleep 1
+          done
+          docker logs yandex-api-mcp-ci
+          exit 1
 
   installer-python:
     runs-on: ubuntu-24.04
@@ -68,5 +85,5 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - run: python -m pip install pytest
-      - run: python -m compileall -q installer
-      - run: python -m pytest -q tests/test_installer.py
+      - run: python -m compileall -q installer scripts/yp_api.py
+      - run: python -m pytest -q tests/test_installer.py tests/test_yp_api.py

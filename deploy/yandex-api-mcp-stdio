@@ -1,0 +1,3 @@
+#!/bin/sh
+set -eu
+exec /bin/docker exec -i yandex-api-mcp-yandex-api-mcp-1 node gateway/index.mjs

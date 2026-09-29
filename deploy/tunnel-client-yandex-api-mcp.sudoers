@@ -1,0 +1,1 @@
+tunnel-client ALL=(root) NOPASSWD: /usr/local/libexec/yandex-api-mcp-stdio

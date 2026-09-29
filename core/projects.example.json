@@ -1,13 +1,15 @@
 {
-  "projects": [
+  "accounts": [
     {
       "id": "example",
-      "token": "PUT_OAUTH_TOKEN_HERE",
-      "default_host": "https:example.com:443",
-      "default_counter": 12345678,
+      "name": "Example project",
+      "direct_client_login": "agency-client-login",
+      "metrica_counter_ids": [12345678],
+      "webmaster_hosts": ["https:example.com:443"],
+      "audience": {},
+      "search": {},
       "direct": {
-        "sandbox": true,
-        "client_login": null,
+        "sandbox": false,
         "limits": { "max_budget_change_pct": 30, "max_bid_change_pct": 50 }
       }
     }
