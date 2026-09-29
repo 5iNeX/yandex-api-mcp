@@ -30,6 +30,9 @@ The fork's Linux installer, `yp` concept, Docker deployment and OpenAI Tunnel in
 | Remote MCP initialize, tools/list, tool call via SSE | Pass; 151 public tools |
 | Remote stdio through prepared Tunnel sudo wrapper | Pass; initialize and 151 tools |
 | Remote Docker health | Pass, `127.0.0.1:8001/healthz` |
+| Docker restart and reconnection | Pass; both backends and 151 tools returned after restart |
+| Public mode with pro environment overrides | Pass; TypeScript and Python API guards remained read-only |
+| Draft PR CI | Seven checks passed, including Docker smoke, Python/Node tests and lint |
 | Direct clients, campaigns, adgroups, ads, keywords | Pass with campaign SelectionCriteria where required |
 | Direct report | Pass, actual TSV returned |
 | Metrika counters, goals, Reporting API | Pass |
@@ -48,6 +51,7 @@ Endpoint paths were compared with current official Webmaster documentation (see 
 - Proxmox host: `Porx.m01`; existing LXC **123**, `yandex-mcp`, Debian 13, 2 cores, 2560 MiB RAM, onboot enabled. Existing network configuration was only read, never changed.
 - Existing deployment: `/opt/yandex-mcp`, `compose-direct-1` on loopback port 8000, an existing Webmaster container, `tunnel-client.service`, and `yandex-oauth-refresh.timer`. All remain in place.
 - New parallel deployment: `/opt/yandex-api-mcp`, container `yandex-api-mcp-yandex-api-mcp-1`, image `local/yandex-api-mcp:0.1.0`, Compose project `yandex-api-mcp`, loopback port **8001**. Container restart policy `unless-stopped`, read-only root filesystem, non-root UID 10001, dropped capabilities, state and secrets mounted from host files.
+- Observed steady memory use was about **132 MiB**. `docker inspect` contains no OAuth token, client secret or Search API key values; port 8001 is published only on `127.0.0.1`.
 - New CLI: `/usr/local/bin/yp-api` (old `/bin/yp` preserved). Prepared Tunnel wrapper: `/usr/local/libexec/yandex-api-mcp-stdio`; narrow sudoers entry added for `tunnel-client`. Candidate profile: `/opt/yandex-api-mcp/tunnel-candidate.yaml`; active profile not changed.
 - No Proxmox host, LXC, VPN, routing, firewall, DNS, bridge, interface or proxy configuration was modified. No reboot or network service restart occurred. MCP is not publicly exposed.
 
