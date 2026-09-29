@@ -118,14 +118,14 @@ def test_write_guard_allows_join_yclid_read_only_with_existing_request_id_and_no
     )
 
 
-@pytest.mark.parametrize('action', ['clean', 'cancel'])
-def test_public_logs_export_cannot_delete_or_cancel(action):
+@pytest.mark.parametrize('action', ['create', 'clean', 'cancel'])
+def test_public_logs_export_cannot_mutate(action):
     config = _config(public_readonly=True, write_enabled=True, use_sandbox=True)
     with pytest.raises(Exception, match='public read-only'):
         _enforce_write_guard(config, 'metrica.logs_export', {'action': action, 'counter_id': '1', 'request_id': '2'})
 
 
-@pytest.mark.parametrize('action', ['allinfo', 'info', 'download', 'evaluate', 'create'])
-def test_logs_export_read_and_export_actions_remain_available(action):
+@pytest.mark.parametrize('action', ['allinfo', 'info', 'download', 'evaluate'])
+def test_logs_export_read_actions_remain_available(action):
     config = _config(public_readonly=True)
     _enforce_write_guard(config, 'metrica.logs_export', {'action': action})

@@ -13,7 +13,7 @@
 | Audience | segments, pixels, statistics, overlap | — |
 | Search API | SERP via folder ID and API key | — |
 
-Публичный образ скрывает инструменты записи и отклоняет их вызовы. Pro-сборка требует `confirm:true`; для удаления также требуется `destructive_confirmation` с именем инструмента. BI Option 2 остаётся private plugin и не входит в OSS image.
+Публичный образ скрывает инструменты записи и отклоняет их вызовы. Смешанный `metrica.logs_export` остаётся доступным для чтения существующих экспортов, но действия `create`, `clean` и `cancel` блокируются. Pro-сборка требует `confirm:true`; для удаления также требуется `destructive_confirmation` с именем инструмента. BI Option 2 остаётся private plugin и не входит в OSS image.
 
 ## Установка Debian/Ubuntu
 

@@ -1,5 +1,7 @@
 # Public mode (контракт v1.0.0)
 
+> Исторический контракт старого образа `yandex-direct-metrica-mcp`. Для нового `yandex-api-mcp` смотрите [README](../../README.md) и [отчёт о миграции](../../MIGRATION_REPORT.md). В новом публичном сервере `metrica.logs_export` разрешает только чтение; действия `create`, `clean` и `cancel` блокируются.
+
 Этот документ описывает **контракт public read-only** для Docker image `yandex-direct-metrica-mcp`.
 
 ## Определение “read-only” (Контракт A)

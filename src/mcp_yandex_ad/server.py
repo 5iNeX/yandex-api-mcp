@@ -2497,7 +2497,7 @@ def _error_response(tool: str, exc: Exception) -> list[TextContent]:
 
 
 def _is_write_tool(name: str, args: dict[str, Any] | None = None) -> bool:
-    if name == "metrica.logs_export" and str((args or {}).get("action", "")).lower() in {"clean", "cancel"}:
+    if name == "metrica.logs_export" and str((args or {}).get("action", "")).lower() in {"create", "clean", "cancel"}:
         return True
     if name in WRITE_TOOLS:
         return True
@@ -5954,7 +5954,11 @@ def _direct_call(
 
     return with_retries(
         _call,
-        max_attempts=ctx.config.retry_max_attempts,
+        max_attempts=(
+            ctx.config.retry_max_attempts
+            if method.lower() in {"get", "check", "checkdirty", "hassearchvolume", "deduplicate"}
+            else 1
+        ),
         base_delay_seconds=ctx.config.retry_base_delay_seconds,
         max_delay_seconds=ctx.config.retry_max_delay_seconds,
     )
@@ -6018,7 +6022,7 @@ def _metrica_management_call(
 
     return with_retries(
         _call,
-        max_attempts=ctx.config.retry_max_attempts,
+        max_attempts=ctx.config.retry_max_attempts if method.lower() == "get" else 1,
         base_delay_seconds=ctx.config.retry_base_delay_seconds,
         max_delay_seconds=ctx.config.retry_max_delay_seconds,
     )
@@ -6082,7 +6086,7 @@ def _metrica_logs_call(
 
     response = with_retries(
         _call,
-        max_attempts=ctx.config.retry_max_attempts,
+        max_attempts=1 if action in {"create", "clean", "cancel"} else ctx.config.retry_max_attempts,
         base_delay_seconds=ctx.config.retry_base_delay_seconds,
         max_delay_seconds=ctx.config.retry_max_delay_seconds,
     )
@@ -6246,7 +6250,7 @@ def _audience_call(
 
     data = with_retries(
         _call,
-        max_attempts=ctx.config.retry_max_attempts,
+        max_attempts=ctx.config.retry_max_attempts if method.strip().upper() == "GET" else 1,
         base_delay_seconds=ctx.config.retry_base_delay_seconds,
         max_delay_seconds=ctx.config.retry_max_delay_seconds,
     )

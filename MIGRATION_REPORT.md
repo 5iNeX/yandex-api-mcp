@@ -17,19 +17,21 @@ The fork's Linux installer, `yp` concept, Docker deployment and OpenAI Tunnel in
 - **Metrika:** counters/goals/segments/filters, reporting, Logs API, offline conversions, expenses, CRM/orders and calls; uploads are pro-only.
 - **Wordstat, Audience, Search API:** preserved from the Python project and exposed through the same gateway.
 - **OAuth:** one shared state file and token-free project registry. Access token refresh occurs before expiry or after 401, writes atomically to persistent state and reconnects child processes. The Python adapter also retains its own in-process refresh behavior. Separate Webmaster token is opt-in with `YANDEX_WEBMASTER_TOKEN_DISTINCT=true` if a different OAuth application is genuinely needed.
-- **Safety:** public image marker and gateway block API writes. Core client also blocks writes at its API boundary. Non-idempotent writes are not retried on 429/5xx/network errors. Pro destructive calls require an exact tool-name confirmation and batches are capped at 50.
+- **Safety:** public image marker and gateway block API writes. Core client also blocks writes at its API boundary. Non-idempotent writes are not retried on 429/5xx/network errors, including Python Direct, Metrika Management, Audience and Logs API mutations. Pro destructive calls require an exact tool-name confirmation and batches are capped at 50.
+- **Logs API:** the mixed `metrica.logs_export` tool permits read actions in public mode. `create`, `clean` and `cancel` are denied in both gateway and Python backend; pro calls require preview/confirmation, and these actions are not retried automatically.
 
 ## Tests and live verification
 
 | Check | Result |
 |---|---|
-| `pytest -q` | 284 passed |
-| `npm run build && npm test` | 23 TypeScript core + 2 gateway tests passed |
+| `pytest -q` | 288 passed |
+| `npm run build && npm test` | 23 TypeScript core + 4 gateway tests passed |
 | `npm audit --omit=dev` in core and gateway | 0 vulnerabilities after lockfile update |
 | Local Docker build and health | Pass, both backends ready |
 | Remote MCP initialize, tools/list, tool call via SSE | Pass; 151 public tools |
 | Remote stdio through prepared Tunnel sudo wrapper | Pass; initialize and 151 tools |
 | Remote Docker health | Pass, `127.0.0.1:8001/healthz` |
+| Deployed public Logs API guard | Pass: live MCP calls with `create`, `clean`, `cancel` were blocked before provider access |
 | Docker restart and reconnection | Pass; both backends and 151 tools returned after restart |
 | Public mode with pro environment overrides | Pass; TypeScript and Python API guards remained read-only |
 | Draft PR CI | Seven checks passed, including Docker smoke, Python/Node tests and lint |
@@ -58,6 +60,8 @@ Endpoint paths were compared with current official Webmaster documentation (see 
 ## OAuth blocker and required scope
 
 The existing OAuth application **Hermes Reports** and its current token request `webmaster:hostinfo` but not `webmaster:verify`. The app settings visibly show only the external-links permission for Webmaster. The current token's scopes include `audience:read`, `direct:api`, `webmaster:hostinfo`, `appmetrica:read`, `passport:business`, and `metrika:read`. Yandex replies to host-level reads with `ACCESS_FORBIDDEN: Required scope: COMMON, application scopes: [ALL_SCOPES, HOST_LIST, EXTERNAL_LINKS]`. Official Webmaster authorization docs require `webmaster:hostinfo` **and** `webmaster:verify`. The endpoint paths match the official reference; this is an OAuth rights issue, not a transport or network error.
+
+The seven running legacy Webmaster worker containers were checked without printing their environment. Their `YANDEX_WEBMASTER_TOKEN` is identical to the token in the new deployment; a direct read with that token returned HTTP 403 for host summary. They provide no alternate authorized token for this migration.
 
 Adding `webmaster:verify` in the browser expands application permissions and requires action-time owner approval under the browser confirmation policy. The setting was selected on the edit form but **not saved** while approval is pending. After approval, save the application setting, obtain a new OAuth authorization code/consent (refresh alone cannot add scopes), replace the *new deployment's* OAuth state, and repeat `yp-api verify`. Keep the old token and old deployment intact until verification. The new Tunnel may be switched only after those checks pass.
 

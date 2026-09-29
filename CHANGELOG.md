@@ -7,6 +7,7 @@ All notable changes to this MCP project will be documented in this file.
 - Renamed the new distribution to `yandex-api-mcp` and added a unified gateway around the webkoth-derived Webmaster/Direct/Metrika core and the existing Python Wordstat/Audience/Search API modules.
 - Added shared OAuth state with automatic refresh, token-free projects registry, public read-only guards, write confirmation, Docker Compose, `yp-api` CLI and a prepared OpenAI Tunnel wrapper.
 - Deployed the new public server alongside the old MCP on Proxmox LXC 123. Real read probes passed for Direct, Metrika, Wordstat, Audience and Search API. Webmaster host-level reads require an additional OAuth scope; the old Tunnel remains active.
+- Hardened the mixed `metrica.logs_export` tool: public mode now blocks `create`, `clean`, and `cancel` at both gateway and Python backend. Mutating Python calls to Logs API, Direct, Metrika Management and Audience are never retried automatically. Extended gateway classification to cover mutating human-friendly Direct/Metrika tools.
 - Added the migration audit, deployment guides, end-to-end probe and regression tests. See `MIGRATION_REPORT.md`.
 
 ## Unreleased

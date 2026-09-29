@@ -25,14 +25,21 @@ export function isWriteTool(name) {
     /^(?:accounts\.(?:upsert|delete)|auth\.|write\.confirm|project\.(?:add|remove))/.test(name) ||
     /^direct\.(?:create_|update_|raw_call)/.test(name) ||
     /^(?:metrica|audience)\.(?:raw_call|goals\.(?:create|update|delete)|segments\.(?:create|update|delete))$/.test(name) ||
-    /^audience\.(?:upload\.start|hf\.apply_activation_plan)$/.test(name) ||
-    /^direct\.hf\.(?:pause|resume|archive|unarchive|moderate|delete|set_|create_|update_|apply_|clear_)/.test(name) ||
-    /^direct\.hf\.(?:clone_campaign|attach_|ensure_assets_|bid_sweep_run)/.test(name) ||
-    /^metrica\.hf\.(?:create|update|delete)/.test(name);
+    /^audience\.upload\.start$/.test(name) ||
+    (name.startsWith("direct.hf.") && !/^direct\.hf\.(?:find_|get_|report_|pressure_report$|plan_changes$|bid_sweep_(?:plan|analyze)$)/.test(name)) ||
+    (name.startsWith("metrica.hf.") && !/^metrica\.hf\.(?:list_accessible_counters$|counter_summary$|report_|logs_export_preset$)/.test(name)) ||
+    (name.startsWith("audience.hf.") && name === "audience.hf.apply_activation_plan") ||
+    name === "join.hf.direct_vs_metrica_by_yclid";
+}
+
+export function isWriteCall(name, args = {}) {
+  return isWriteTool(name) ||
+    (name === "metrica.logs_export" && ["create", "clean", "cancel"].includes(String(args.action || "").toLowerCase()));
 }
 
 export function isDestructiveTool(name) {
-  return DESTRUCTIVE_NAMES.has(name) || /\.(?:delete|delete_ads|delete_keywords|clear_bid_modifiers)$/.test(name);
+  return DESTRUCTIVE_NAMES.has(name) || /\.(?:delete|delete_ads|delete_keywords|clear_bid_modifiers|delete_goal)$/.test(name) ||
+    /^direct\.hf\.(?:archive|unarchive)_/.test(name);
 }
 
 export function isPublicReadOnly() {
@@ -45,12 +52,14 @@ export function allowedTool(tool) {
 }
 
 export function guardCall(name, args = {}) {
-  if (isPublicReadOnly() && isWriteTool(name)) throw new Error("Write operation disabled by public/read-only policy");
-  if (!isWriteTool(name)) return null;
+  if (isPublicReadOnly() && isWriteCall(name, args)) throw new Error("Write operation disabled by public/read-only policy");
+  if (!isWriteCall(name, args)) return null;
   if (args.confirm !== true) {
     return { content: [{ type: "text", text: JSON.stringify({ preview: true, tool: name, arguments: args, note: "No API mutation performed. Call again with confirm:true to execute." }) }] };
   }
-  const destructive = isDestructiveTool(name) || /^(Delete|Archive|Suspend)$/i.test(String(args.method || ""));
+  const destructive = isDestructiveTool(name) ||
+    (name === "metrica.logs_export" && ["clean", "cancel"].includes(String(args.action || "").toLowerCase())) ||
+    /^(Delete|Archive|Suspend)$/i.test(String(args.method || ""));
   if (destructive && args.destructive_confirmation !== name) {
     throw new Error(`Destructive operation requires destructive_confirmation: ${name}`);
   }
