@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 
 def _pkg_version() -> str:
     try:
-        return importlib.metadata.version("yandex-direct-metrica-mcp")
+        return importlib.metadata.version("yandex-api-mcp")
     except Exception:
         return "0.0.0"
 

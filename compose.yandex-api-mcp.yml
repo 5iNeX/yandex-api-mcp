@@ -2,7 +2,7 @@ services:
   yandex-api-mcp:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.yandex-api-mcp
       args:
         MCP_EDITION: public
         MCP_PUBLIC_READONLY: "true"

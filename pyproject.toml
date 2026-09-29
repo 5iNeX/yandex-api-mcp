@@ -1,7 +1,7 @@
 [project]
-name = "yandex-direct-metrica-mcp"
-version = "2.0.17"
-description = "MCP server for Yandex Direct + Metrica (read-only, raw exports)"
+name = "yandex-api-mcp"
+version = "0.1.0"
+description = "Unified MCP server for Yandex Webmaster, Direct, Metrika, Wordstat, Audience and Search API"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -23,6 +23,7 @@ dev = [
 ]
 
 [project.scripts]
+yandex-api-mcp-python = "mcp_yandex_ad:main"
 mcp-yandex-ad = "mcp_yandex_ad:main"
 yandex-direct-metrica-mcp = "mcp_yandex_ad:main"
 

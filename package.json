@@ -1,0 +1,19 @@
+{
+  "name": "yandex-api-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "yandex-api-mcp": "./gateway/index.mjs"
+  },
+  "scripts": {
+    "build": "npm --prefix core run build",
+    "test": "node --test gateway/*.test.mjs && npm --prefix core test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.31.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

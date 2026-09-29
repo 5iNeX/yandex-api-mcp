@@ -1,0 +1,15 @@
+{
+  "projects": [
+    {
+      "id": "example",
+      "token": "PUT_OAUTH_TOKEN_HERE",
+      "default_host": "https:example.com:443",
+      "default_counter": 12345678,
+      "direct": {
+        "sandbox": true,
+        "client_login": null,
+        "limits": { "max_budget_change_pct": 30, "max_bid_change_pct": 50 }
+      }
+    }
+  ]
+}

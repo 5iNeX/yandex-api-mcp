@@ -6,6 +6,12 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .venv/
+node_modules/
+core/node_modules/
+core/dist/
+graphify-out/
+state/
+secrets/
 .env
 *.log
 repos/

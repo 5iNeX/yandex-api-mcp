@@ -79,11 +79,9 @@ def _read_edition_marker() -> str | None:
     This is intended to make the **public Docker image** safe-by-default even if
     runtime env vars are misconfigured.
     """
-    try:
-        root = Path(__file__).resolve().parents[3]  # /app in Dockerfile layout
-    except Exception:
-        return None
-    marker = root / ".mcp_edition"
+    marker = Path("/app/.mcp_edition")
+    if not marker.exists():
+        marker = Path(__file__).resolve().parents[2] / ".mcp_edition"
     try:
         value = marker.read_text(encoding="utf-8").strip().lower()
     except Exception:
