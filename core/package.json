@@ -21,11 +21,11 @@
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.31.0",
-    "zod": "latest"
+    "zod": "4.3.6"
   },
   "devDependencies": {
-    "@types/node": "latest",
-    "tsx": "latest",
-    "typescript": "^5"
+    "@types/node": "25.3.3",
+    "tsx": "4.21.0",
+    "typescript": "5.9.3"
   }
 }

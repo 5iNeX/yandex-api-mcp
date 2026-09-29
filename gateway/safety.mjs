@@ -27,6 +27,7 @@ export function isWriteTool(name) {
     /^(?:metrica|audience)\.(?:raw_call|goals\.(?:create|update|delete)|segments\.(?:create|update|delete))$/.test(name) ||
     /^audience\.(?:upload\.start|hf\.apply_activation_plan)$/.test(name) ||
     /^direct\.hf\.(?:pause|resume|archive|unarchive|moderate|delete|set_|create_|update_|apply_|clear_)/.test(name) ||
+    /^direct\.hf\.(?:clone_campaign|attach_|ensure_assets_|bid_sweep_run)/.test(name) ||
     /^metrica\.hf\.(?:create|update|delete)/.test(name);
 }
 

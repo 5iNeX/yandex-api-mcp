@@ -5,7 +5,7 @@ import { allowedTool, guardCall, isWriteTool } from "./safety.mjs";
 test("public build suppresses and blocks all known writes", () => {
   process.env.MCP_PUBLIC_READONLY = "true";
   process.env.MCP_EDITION = "public";
-  for (const name of ["yandex_webmaster_hosts_delete", "yandex_direct_campaigns_manage", "yandex_metrika_logs_clean", "accounts.delete", "direct.hf.delete_ads", "metrica.goals.delete", "audience.raw_call"]) {
+  for (const name of ["yandex_webmaster_hosts_delete", "yandex_direct_campaigns_manage", "yandex_metrika_logs_clean", "accounts.delete", "direct.hf.delete_ads", "direct.hf.clone_campaign", "direct.hf.bid_sweep_run", "metrica.goals.delete", "audience.raw_call"]) {
     assert.equal(isWriteTool(name), true);
     assert.equal(allowedTool({ name }), false);
     assert.throws(() => guardCall(name, { confirm: true }), /disabled/);
