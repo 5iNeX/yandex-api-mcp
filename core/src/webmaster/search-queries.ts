@@ -11,7 +11,7 @@ export function registerSearchQueriesTools(server: McpServer): void {
     "Get top search queries for a site (up to 3000, max 500 per page). Data delayed ~1 week.",
     {
       host_id: z.string().describe("Host ID"),
-      order_by: z.enum(["TOTAL_SHOWS", "TOTAL_CLICKS"]).optional().describe("Sort order"),
+      order_by: z.enum(["TOTAL_SHOWS", "TOTAL_CLICKS"]).default("TOTAL_SHOWS").describe("Sort order"),
       query_indicator: queryIndicator.describe("Metric to include"),
       device_type_indicator: deviceType.describe("Device filter"),
       date_from: z.string().optional().describe("Start date (YYYY-MM-DD)"),
@@ -23,7 +23,7 @@ export function registerSearchQueriesTools(server: McpServer): void {
       const client = getClient();
       const data = await client.webmasterRequest("GET", "/hosts/{host_id}/search-queries/popular", {
         hostId: host_id,
-        params: { order_by, query_indicator, device_type_indicator, date_from, date_to, offset, limit },
+        params: { order_by: order_by ?? "TOTAL_SHOWS", query_indicator, device_type_indicator, date_from, date_to, offset, limit },
       });
       return {
         content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],

@@ -11,9 +11,10 @@
 - Backed up the old deployment, prepared and tested a Tunnel candidate wrapper without switching the active Tunnel; no network configuration was changed.
 - Rebuilt only the new LXC 123 container with the Logs API safety fix. Confirmed 151 tools, healthy backends, live MCP rejection of Logs `create`/`clean`/`cancel`, and continued read access to Direct/Metrika/Wordstat/Audience/Search API.
 - Checked the existing Webmaster workers for a different authorized token; they share the same token and host-summary reads still receive HTTP 403.
+- After owner approval, reauthorized only the new deployment with `webmaster:verify`; a live OAuth refresh and full multi-service `yp-api verify` passed.
+- Fixed mandatory `order_by` for Webmaster popular queries and the `/links/internal/broken/` routes. The expanded read-only Webmaster smoke passed 34/39 tools; five lacked safe existing IDs.
+- Backed up and switched only the active Tunnel profile to the new MCP. The Tunnel is active and ready, the control-plane poll passed, and the old Direct container remains healthy.
 
 ## To Do
 
-- Add `webmaster:verify` to the OAuth application after action-time owner approval, obtain fresh consent and re-run Webmaster host-level read probes.
-- Switch the OpenAI Tunnel only after the new MCP passes all read checks and confirm with a ChatGPT tool call.
-- Run a live refresh after the old deployment no longer depends on the same refresh token, or with a separate test OAuth application.
+- Refresh the installed ChatGPT Yandex application's tool catalog after action-time owner confirmation, then verify a real Webmaster tool call in ChatGPT.

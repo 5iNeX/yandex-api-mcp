@@ -10,16 +10,16 @@ Install Docker Engine, Compose v2 and Python 3 on Debian/Ubuntu, then run `sudo 
 
 ## OpenAI Tunnel
 
-The current Tunnel profile uses a fixed stdio command to the old Direct MCP. Keep it running until the new server passes `yp verify`, including Webmaster with the required scope. A prepared wrapper can replace the profile command with:
+The LXC 123 Tunnel profile now uses the new MCP after `yp-api verify` and the expanded Webmaster read-only smoke passed. Its stdio command is:
 
 ```text
 sudo -n /usr/local/libexec/yandex-api-mcp-stdio
 ```
 
-The wrapper must be root-owned and executable only with a narrow sudoers entry for the `tunnel-client` user. It should run `docker exec -i yandex-api-mcp-yandex-api-mcp-1 node gateway/index.mjs`. Back up the existing profile before switching; restart only `tunnel-client.service`, then run `tunnel-client doctor --profile yandex-mcp --profile-dir /etc/tunnel-client/profiles` and a remote ChatGPT tool call. Rollback restores the original profile and restarts only the Tunnel service. No MCP port, host route, DNS, firewall or interface change is needed.
+The root-owned wrapper has a narrow sudoers entry for the `tunnel-client` user and runs `docker exec -i yandex-api-mcp-yandex-api-mcp-1 node gateway/index.mjs`. The prior profile is backed up at `/opt/yandex-api-mcp/backups/tunnel-before-cutover-20260930T053554Z.yaml`. `tunnel-client health --port 8080 --require-control-plane-poll --json` returned ready after cutover. The installed ChatGPT Yandex application's static tool catalog still needs a separate refresh to show new Webmaster tools. Rollback restores that profile and restarts only `tunnel-client.service`. No MCP port, host route, DNS, firewall or interface change is needed.
 
 ## Security and rollback
 
 All secrets are mounted from host files. `docker inspect` contains paths, not token values. The public image marker forces read-only even if environment variables are changed. The gateway suppresses write tools and rejects direct write calls. Pro writes require preview and confirmation; destructive calls require an exact tool-name confirmation and batches are capped at 50. Direct per-item Results are summarized, including partial failures. Network errors and 5xx are retried only for read/idempotent requests.
 
-To rollback the new deployment, stop only `yandex-api-mcp-yandex-api-mcp-1` with `docker compose -p yandex-api-mcp -f /opt/yandex-api-mcp/compose.yandex-api-mcp.yml stop`. The old `/opt/yandex-mcp/` Compose and Tunnel are independent. Application backup files are under `/opt/yandex-mcp/backups/`. Do not alter Proxmox or LXC networking.
+To rollback, restore the prior Tunnel profile from `/opt/yandex-api-mcp/backups/tunnel-before-cutover-20260930T053554Z.yaml`, restart only `tunnel-client.service`, then stop only `yandex-api-mcp-yandex-api-mcp-1` with `docker compose -p yandex-api-mcp -f /opt/yandex-api-mcp/compose.yandex-api-mcp.yml stop`. The old `/opt/yandex-mcp/` Compose remains healthy. Application backup files are under both installations' `backups/` directories. Do not alter Proxmox or LXC networking.

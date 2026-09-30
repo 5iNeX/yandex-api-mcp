@@ -4,6 +4,8 @@ All notable changes to this MCP project will be documented in this file.
 
 ## 0.1.0 - 2026-09-30 (yandex-api-mcp branch)
 
+- Completed Webmaster OAuth reauthorization with `webmaster:verify`, fixed the required popular-query sort and broken-internal-links paths, and passed 34 of 39 live read-only Webmaster tools (five require absent task/request IDs or a user sitemap).
+- Switched only the existing `tunnel-client.service` profile to the new MCP after backing it up; the old Direct container remains healthy. Live OAuth refresh and post-refresh API probes passed.
 - Renamed the new distribution to `yandex-api-mcp` and added a unified gateway around the webkoth-derived Webmaster/Direct/Metrika core and the existing Python Wordstat/Audience/Search API modules.
 - Added shared OAuth state with automatic refresh, token-free projects registry, public read-only guards, write confirmation, Docker Compose, `yp-api` CLI and a prepared OpenAI Tunnel wrapper.
 - Deployed the new public server alongside the old MCP on Proxmox LXC 123. Real read probes passed for Direct, Metrika, Wordstat, Audience and Search API. Webmaster host-level reads require an additional OAuth scope; the old Tunnel remains active.

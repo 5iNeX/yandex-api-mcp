@@ -53,7 +53,7 @@ export function registerLinksTools(server: McpServer): void {
     },
     async ({ host_id, offset, limit }) => {
       const client = getClient();
-      const data = await client.webmasterRequest("GET", "/hosts/{host_id}/links/internal/samples", {
+      const data = await client.webmasterRequest("GET", "/hosts/{host_id}/links/internal/broken/samples", {
         hostId: host_id,
         params: { offset, limit },
       });
@@ -73,7 +73,7 @@ export function registerLinksTools(server: McpServer): void {
     },
     async ({ host_id, date_from, date_to }) => {
       const client = getClient();
-      const data = await client.webmasterRequest("GET", "/hosts/{host_id}/links/internal/history", {
+      const data = await client.webmasterRequest("GET", "/hosts/{host_id}/links/internal/broken/history", {
         hostId: host_id,
         params: { date_from, date_to },
       });

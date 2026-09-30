@@ -10,10 +10,10 @@ OAuth scope по умолчанию: `webmaster:hostinfo webmaster:verify direct
 
 ## OpenAI Tunnel
 
-Работающий Tunnel остаётся на старом Direct MCP до успешной проверки нового сервера и OAuth Webmaster. Подготовленная команда переключения: `sudo -n /usr/local/libexec/yandex-api-mcp-stdio`. Root-owned wrapper запускает `docker exec -i yandex-api-mcp-yandex-api-mcp-1 node gateway/index.mjs`; для `tunnel-client` нужна узкая sudoers-запись. Перед переключением сохранить профиль, после него перезапустить только `tunnel-client.service`, выполнить `tunnel-client doctor --profile yandex-mcp --profile-dir /etc/tunnel-client/profiles` и вызов MCP из ChatGPT. Для отката восстановить профиль и снова перезапустить только Tunnel. Порт наружу и сеть Proxmox менять не требуется.
+Tunnel в LXC 123 переключён на новый MCP после успешного `yp-api verify` и расширенного read-only smoke Webmaster. Команда профиля: `sudo -n /usr/local/libexec/yandex-api-mcp-stdio`. Root-owned wrapper запускает `docker exec -i yandex-api-mcp-yandex-api-mcp-1 node gateway/index.mjs`; для `tunnel-client` добавлена узкая sudoers-запись. Предыдущий профиль сохранён в `/opt/yandex-api-mcp/backups/tunnel-before-cutover-20260930T053554Z.yaml`. После переключения `tunnel-client health --port 8080 --require-control-plane-poll --json` вернул ready. Каталог инструментов установленного приложения Yandex в ChatGPT обновляется отдельно для появления новых Webmaster tools. Для отката восстановить профиль и перезапустить только Tunnel. Порт наружу и сеть Proxmox менять не требуется.
 
 ## Безопасность и откат
 
 Секреты находятся в host files, не в image и не в переменных Docker Compose. Публичный marker принудительно блокирует запись. В pro-сборке запись требует `confirm:true`, удаление — точное `destructive_confirmation`; лимит batch — 50. Повтор 5xx/сетевых ошибок применяется только к операциям чтения.
 
-Для отката остановить только новый Compose: `docker compose -p yandex-api-mcp -f /opt/yandex-api-mcp/compose.yandex-api-mcp.yml stop`. Старый `/opt/yandex-mcp/` и Tunnel независимы. Backup сохранён в `/opt/yandex-mcp/backups/`. Сеть Proxmox и LXC не изменять.
+Для отката сначала восстановить предыдущий профиль Tunnel из `/opt/yandex-api-mcp/backups/tunnel-before-cutover-20260930T053554Z.yaml` и перезапустить только `tunnel-client.service`, затем остановить новый Compose: `docker compose -p yandex-api-mcp -f /opt/yandex-api-mcp/compose.yandex-api-mcp.yml stop`. Старый `/opt/yandex-mcp/` продолжает работать. Backup сохранены в `backups/` обеих установок. Сеть Proxmox и LXC не изменять.

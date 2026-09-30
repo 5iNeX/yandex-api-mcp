@@ -41,10 +41,11 @@ The fork's Linux installer, `yp` concept, Docker deployment and OpenAI Tunnel in
 | Wordstat top requests | Pass |
 | Audience segments list | Pass |
 | Search API SERP read | Pass |
-| Webmaster hosts list and external link samples | Pass |
-| Webmaster summary, diagnostics, queries, indexing, sitemaps, recrawl quota | **Blocked by OAuth scope** (details below) |
-| OAuth refresh | Mocked rotation/401 tests passed; no forced live refresh (old deployment shares token) |
-| OpenAI Tunnel new target | Candidate profile `tunnel-client doctor` passed; active profile intentionally unchanged |
+| Webmaster read-only smoke | 34 of 39 tools passed through the deployed MCP; five status/get tools skipped for absent task/request IDs or a user sitemap |
+| Webmaster query and internal-link fixes | Required `order_by` and `/links/internal/broken/` paths verified against live API |
+| OAuth refresh | Mocked rotation/401 tests and live refresh of the new token passed; full API probe passed afterward |
+| OpenAI Tunnel new target | Active profile switched; service active, `/healthz` and `/readyz` 200, control-plane poll succeeded |
+| ChatGPT app tool catalog | Still lists the old Direct/Metrika tools; separate "Update tools" UI action is pending owner confirmation |
 
 Endpoint paths were compared with current official Webmaster documentation (see audit). No destructive Yandex API call was made.
 
@@ -54,16 +55,16 @@ Endpoint paths were compared with current official Webmaster documentation (see 
 - Existing deployment: `/opt/yandex-mcp`, `compose-direct-1` on loopback port 8000, an existing Webmaster container, `tunnel-client.service`, and `yandex-oauth-refresh.timer`. All remain in place.
 - New parallel deployment: `/opt/yandex-api-mcp`, container `yandex-api-mcp-yandex-api-mcp-1`, image `local/yandex-api-mcp:0.1.0`, Compose project `yandex-api-mcp`, loopback port **8001**. Container restart policy `unless-stopped`, read-only root filesystem, non-root UID 10001, dropped capabilities, state and secrets mounted from host files.
 - Observed steady memory use was about **132 MiB**. `docker inspect` contains no OAuth token, client secret or Search API key values; port 8001 is published only on `127.0.0.1`.
-- New CLI: `/usr/local/bin/yp-api` (old `/bin/yp` preserved). Prepared Tunnel wrapper: `/usr/local/libexec/yandex-api-mcp-stdio`; narrow sudoers entry added for `tunnel-client`. Candidate profile: `/opt/yandex-api-mcp/tunnel-candidate.yaml`; active profile not changed.
+- New CLI: `/usr/local/bin/yp-api` (old `/bin/yp` preserved). Tunnel wrapper: `/usr/local/libexec/yandex-api-mcp-stdio`; narrow sudoers entry for `tunnel-client`. Active profile `/etc/tunnel-client/profiles/yandex-mcp.yaml` points to the new wrapper. The old profile was backed up before the switch.
 - No Proxmox host, LXC, VPN, routing, firewall, DNS, bridge, interface or proxy configuration was modified. No reboot or network service restart occurred. MCP is not publicly exposed.
 
-## OAuth blocker and required scope
+## OAuth and Webmaster verification
 
-The existing OAuth application **Hermes Reports** and its current token request `webmaster:hostinfo` but not `webmaster:verify`. The app settings visibly show only the external-links permission for Webmaster. The current token's scopes include `audience:read`, `direct:api`, `webmaster:hostinfo`, `appmetrica:read`, `passport:business`, and `metrika:read`. Yandex replies to host-level reads with `ACCESS_FORBIDDEN: Required scope: COMMON, application scopes: [ALL_SCOPES, HOST_LIST, EXTERNAL_LINKS]`. Official Webmaster authorization docs require `webmaster:hostinfo` **and** `webmaster:verify`. The endpoint paths match the official reference; this is an OAuth rights issue, not a transport or network error.
+The existing OAuth application **Hermes Reports** originally lacked `webmaster:verify`. The owner added and saved that permission. The application UI then showed both Webmaster permissions. A fresh OAuth consent used the existing scopes plus `webmaster:verify`; the new access/refresh pair was written only to `/opt/yandex-api-mcp/state/oauth.json` after a live Webmaster summary probe succeeded. The previous new-deployment state is backed up under `/opt/yandex-api-mcp/backups/`. The token exchange response omitted a `scope` field, so the state records the requested scopes; access was verified through Webmaster, Direct, Metrika and Audience API calls. The new refresh token differs from the old token. A live `yp-api refresh` and full `yp-api verify` succeeded afterward.
 
-The seven running legacy Webmaster worker containers were checked without printing their environment. Their `YANDEX_WEBMASTER_TOKEN` is identical to the token in the new deployment; a direct read with that token returned HTTP 403 for host summary. They provide no alternate authorized token for this migration.
+The seven running legacy Webmaster worker containers were checked without printing their environment. Before reauthorization, their `YANDEX_WEBMASTER_TOKEN` was identical to the old token and host summary returned HTTP 403. They and the old Direct deployment were not changed; a read-only Direct clients probe from the old container still passed after the new token was refreshed.
 
-Adding `webmaster:verify` in the browser expands application permissions and requires action-time owner approval under the browser confirmation policy. The setting was selected on the edit form but **not saved** while approval is pending. After approval, save the application setting, obtain a new OAuth authorization code/consent (refresh alone cannot add scopes), replace the *new deployment's* OAuth state, and repeat `yp-api verify`. Keep the old token and old deployment intact until verification. The new Tunnel may be switched only after those checks pass.
+The first full smoke found two inherited webkoth route/parameter defects. Popular queries omitted mandatory `order_by`; broken internal links omitted the `/broken/` path segment. Both were corrected and verified through the live API. The repeatable script `scripts/webmaster-live-check.mjs` covered all 39 exposed read-only Webmaster tools: 34 succeeded, and five were skipped because their required task/request IDs or a user sitemap were absent. No write was used to create test fixtures.
 
 ## Commands
 
@@ -78,21 +79,23 @@ sudo yp-api logs --tail 80
 cd /opt/yandex-api-mcp && docker compose -p yandex-api-mcp -f docker-compose.yml ps
 curl http://127.0.0.1:8001/healthz
 
-# Prepared Tunnel candidate (does not change active Tunnel)
-sudo tunnel-client doctor --profile-file /opt/yandex-api-mcp/tunnel-candidate.yaml
+# Active Tunnel health
+sudo /usr/local/bin/tunnel-client health --port 8080 --require-control-plane-poll --json
 ```
 
 ## Backup and rollback
 
-A pre-migration backup of old Compose/config/secrets/state/Tunnel files is at `/opt/yandex-mcp/backups/pre-unified-20260929T195000Z.tar.gz` (root-only). New deployment copies the old OAuth and registry into `/opt/yandex-api-mcp/{state,secrets}`; originals were not deleted. To rollback, stop **only** the new Compose project:
+A pre-migration backup of old Compose/config/secrets/state/Tunnel files is at `/opt/yandex-mcp/backups/pre-unified-20260929T195000Z.tar.gz` (root-only). The active Tunnel profile backup is `/opt/yandex-api-mcp/backups/tunnel-before-cutover-20260930T053554Z.yaml`; OAuth backups are in the same root-only directory. The old deployment remains running. To rollback, restore the old profile and restart **only** Tunnel, then stop **only** the new Compose project:
 
 ```bash
+cp /opt/yandex-api-mcp/backups/tunnel-before-cutover-20260930T053554Z.yaml /etc/tunnel-client/profiles/yandex-mcp.yaml
+systemctl restart tunnel-client.service
 cd /opt/yandex-api-mcp
 docker compose -p yandex-api-mcp -f docker-compose.yml stop
 ```
 
-The old `compose-direct-1`, old Webmaster service and active Tunnel still run. If Tunnel is later switched, restore its backed-up profile and restart only `tunnel-client.service`. Do not alter Proxmox networking.
+The old `compose-direct-1` and old Webmaster services still run. Do not alter Proxmox networking.
 
 ## Remaining limits
 
-A live OAuth refresh was deliberately not forced while old and new installations share the refresh token; automated refresh was tested with mocks. The new Tunnel-to-ChatGPT path is prepared and locally tested but not switched because Webmaster host-level reads are blocked. Existing website/tool documents outside the new README may still describe the legacy Direct/Metrika-only distribution; the new deployment docs are authoritative for this branch.
+The installed ChatGPT Yandex application's static tool catalog remains from the old MCP. A ChatGPT prompt asking for the Webmaster host count returned `0` without a visible tool call, so it is **not** evidence of end-to-end Webmaster access through ChatGPT. The settings page offers "Update tools"; that action is pending action-time owner confirmation because it expands the app's access to the new 151-tool catalog. The tunnel itself is ready and its stdio command starts the new core and Python adapter. Existing website/tool documents outside the new README may still describe the legacy Direct/Metrika-only distribution; the new deployment docs are authoritative for this branch.
