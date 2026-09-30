@@ -297,7 +297,7 @@ def test_proxy_is_process_scoped_and_not_in_argv(runtime, monkeypatch):
     assert "env:HTTPS_PROXY" in profile and "env:CONTROL_PLANE_API_KEY" in profile
     assert "LoadCredential=runtime-key:" in unit and "LoadCredential=proxy-url:" in unit
     assert "Environment=" not in unit and "fixture-password" not in unit
-    assert "Restart=on-failure" in unit and "127.0.0.1:8080" in profile
+    assert "Restart=always" in unit and "127.0.0.1:8080" in profile
 
 
 def test_no_credentials_prompt_when_openai_network_fails(runtime, monkeypatch):

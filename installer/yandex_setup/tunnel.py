@@ -155,7 +155,7 @@ LoadCredential=runtime-key:{root}/secrets/tunnel-runtime-key
 """
         + (f"LoadCredential=proxy-url:{root}/secrets/tunnel-proxy\n" if proxy else "")
         + f"""ExecStart={root}/bin/tunnel-run
-Restart=on-failure
+Restart=always
 RestartSec=5
 TimeoutStopSec=20
 PrivateTmp=true

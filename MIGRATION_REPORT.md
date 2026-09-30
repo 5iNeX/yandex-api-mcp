@@ -24,7 +24,7 @@ The fork's Linux installer, `yp` concept, Docker deployment and OpenAI Tunnel in
 
 | Check | Result |
 |---|---|
-| `pytest -q` | 288 passed |
+| `pytest -q` | 290 passed after live agent report fixes |
 | `npm run build && npm test` | 23 TypeScript core + 4 gateway tests passed |
 | `npm audit --omit=dev` in core and gateway | 0 vulnerabilities after lockfile update |
 | Local Docker build and health | Pass, both backends ready |
@@ -47,6 +47,7 @@ The fork's Linux installer, `yp` concept, Docker deployment and OpenAI Tunnel in
 | OpenAI Tunnel new target | Active profile switched; service active, `/healthz` and `/readyz` 200, control-plane poll succeeded |
 | ChatGPT app tool catalog | Owner manually updated the installed Yandex app's tools; a new ChatGPT conversation returned `3` and named `yandex_webmaster_hosts_list`, though its UI did not expose the underlying tool-call trace |
 | Installed Yandex app read call | `direct.list_clients` succeeded through the connector after Tunnel cutover |
+| Agent report incident retest | Metrika geo city and time-series reads, Direct campaign report, and Direct adextensions list passed through the installed Yandex connector after repair |
 
 Endpoint paths were compared with current official Webmaster documentation (see audit). No destructive Yandex API call was made.
 
@@ -57,6 +58,7 @@ Endpoint paths were compared with current official Webmaster documentation (see 
 - New parallel deployment: `/opt/yandex-api-mcp`, container `yandex-api-mcp-yandex-api-mcp-1`, image `local/yandex-api-mcp:0.1.0`, Compose project `yandex-api-mcp`, loopback port **8001**. Container restart policy `unless-stopped`, read-only root filesystem, non-root UID 10001, dropped capabilities, state and secrets mounted from host files.
 - Observed steady memory use was about **132 MiB**. `docker inspect` contains no OAuth token, client secret or Search API key values; port 8001 is published only on `127.0.0.1`.
 - New CLI: `/usr/local/bin/yp-api` (old `/bin/yp` preserved). Tunnel wrapper: `/usr/local/libexec/yandex-api-mcp-stdio`; narrow sudoers entry for `tunnel-client`. Active profile `/etc/tunnel-client/profiles/yandex-mcp.yaml` points to the new wrapper. The old profile was backed up before the switch.
+- `tunnel-client.service` now uses `Restart=always`: its previous `Restart=on-failure` did not recover when an interrupted stdio command caused the Tunnel to exit successfully during a new-container recreate. Only this application unit was edited and reloaded; the prior unit is backed up under `/opt/yandex-api-mcp/backups/`.
 - No Proxmox host, LXC, VPN, routing, firewall, DNS, bridge, interface or proxy configuration was modified. No reboot or network service restart occurred. MCP is not publicly exposed.
 
 ## OAuth and Webmaster verification
@@ -66,6 +68,12 @@ The existing OAuth application **Hermes Reports** originally lacked `webmaster:v
 The seven running legacy Webmaster worker containers were checked without printing their environment. Before reauthorization, their `YANDEX_WEBMASTER_TOKEN` was identical to the old token and host summary returned HTTP 403. They and the old Direct deployment were not changed; a read-only Direct clients probe from the old container still passed after the new token was refreshed.
 
 The first full smoke found two inherited webkoth route/parameter defects. Popular queries omitted mandatory `order_by`; broken internal links omitted the `/broken/` path segment. Both were corrected and verified through the live API. The repeatable script `scripts/webmaster-live-check.mjs` covered all 39 exposed read-only Webmaster tools: 34 succeeded, and five were skipped because their required task/request IDs or a user sitemap were absent. No write was used to create test fixtures.
+
+## Live agent report incident, 2026-09-30
+
+Tunnel logs showed two `metrica.hf.report_geo` failures (`ym:s:geoCity`, API code 4001), two `metrica.hf.report_time_series` failures (bare `visits`, API code 4002), one `direct.report` invalid request, and one `direct.list_adextensions` invalid request. The Metrika geo preset used unsupported dimensions; it now uses the documented `ym:s:regionCity` and `ym:s:regionCountry`. The time-series preset now accepts `visits`, `users`, and `pageviews` as aliases for full Metrika metric names. The Python Direct report builder now always includes the required `SelectionCriteria` object and defaults the period to `YESTERDAY` when no dates are supplied. An explicit live Direct report before repair exposed the missing `SelectionCriteria` detail. `direct.list_adextensions` worked with default arguments on a live account; the earlier invalid request depended on the agent's supplied arguments, which were not logged. Invalid Metrika HF metrics now return a structured error instead of a connector output-validation failure.
+
+After backing up `server.py` and `hf_metrica.py` to `/opt/yandex-api-mcp/backups/report-fix-20260930/`, only the new image/container was rebuilt and recreated. The active Tunnel exited cleanly when its stdio subprocess was interrupted, and systemd did not restart it under the old policy. Its unit was backed up to `/opt/yandex-api-mcp/backups/tunnel-client-before-restart-policy-20260930.service`, changed to `Restart=always`, reloaded, and started. Final `yp-api doctor` and Tunnel ready/control-plane-poll checks passed. A live post-repair connector retest succeeded for the four report/list calls named above; no write API call was made. To revert this incident, restore the backed-up application files and unit, rebuild/recreate only the new Compose service, and restart only `tunnel-client.service`.
 
 ## Commands
 

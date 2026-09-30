@@ -66,6 +66,15 @@ def test_direct_report_adds_safe_defaults_when_dates_provided():
     assert params["Format"] == "TSV"
     assert params["IncludeVAT"] == "YES"
     assert params["IncludeDiscount"] == "NO"
+    assert params["SelectionCriteria"] == {"DateFrom": "2026-02-01", "DateTo": "2026-02-03"}
+
+
+def test_direct_report_includes_required_selection_and_period_without_dates():
+    params = server._build_report_params(
+        {"report_type": "CAMPAIGN_PERFORMANCE_REPORT", "field_names": ["Date", "CampaignId"], "date_range_type": "YESTERDAY"}
+    )
+    assert params["SelectionCriteria"] == {}
+    assert params["DateRangeType"] == "YESTERDAY"
 
 
 def test_logs_export_requires_dates_for_create():

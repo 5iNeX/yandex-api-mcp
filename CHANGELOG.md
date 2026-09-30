@@ -4,6 +4,7 @@ All notable changes to this MCP project will be documented in this file.
 
 ## 0.1.0 - 2026-09-30 (yandex-api-mcp branch)
 
+- Repaired live agent report failures: Metrika geo dimensions and metric aliases, required Direct report selection/period defaults, and structured Metrika HF errors. Changed only the Tunnel application unit to restart after a clean exit caused by an interrupted stdio subprocess; live read retests passed.
 - Recorded the owner's manual ChatGPT Yandex tool-catalog refresh and a new ChatGPT response of `3 — yandex_webmaster_hosts_list`; reconfirmed the deployed container, Tunnel health and `yp-api doctor`. The ChatGPT UI did not expose the underlying call trace.
 - Completed Webmaster OAuth reauthorization with `webmaster:verify`, fixed the required popular-query sort and broken-internal-links paths, and passed 34 of 39 live read-only Webmaster tools (five require absent task/request IDs or a user sitemap).
 - Switched only the existing `tunnel-client.service` profile to the new MCP after backing it up; the old Direct container remains healthy. Live OAuth refresh and post-refresh API probes passed.

@@ -56,3 +56,20 @@ def test_counter_summary_omits_warnings_when_goals_are_loaded() -> None:
     assert out["status"] == "ok"
     assert out["result"]["goals"] == {"goals": [{"id": 1, "name": "Lead"}]}
     assert "warnings" not in out
+
+
+def test_report_alias_and_geo_dimensions_match_metrica_api() -> None:
+    class _StatsCtx(_Ctx):
+        params: dict[str, Any]
+
+        def _metrica_get_stats(self, params: dict[str, Any]) -> dict[str, Any]:
+            self.params = params
+            return {"data": [], "total_rows": 0}
+
+    ctx = _StatsCtx()
+    handle("metrica.hf.report_time_series", ctx, {"counter_id": "42", "date_from": "2026-09-01", "date_to": "2026-09-02", "metric": "visits"})
+    assert ctx.params["metrics"] == "ym:s:visits"
+    handle("metrica.hf.report_geo", ctx, {"counter_id": "42", "date_from": "2026-09-01", "date_to": "2026-09-02", "level": "city"})
+    assert ctx.params["dimensions"] == "ym:s:regionCity"
+    handle("metrica.hf.report_geo", ctx, {"counter_id": "42", "date_from": "2026-09-01", "date_to": "2026-09-02", "level": "country"})
+    assert ctx.params["dimensions"] == "ym:s:regionCountry"

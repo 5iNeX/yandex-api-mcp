@@ -6398,8 +6398,7 @@ def _build_report_params(args: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("field_names is required")
     if not args.get("report_type"):
         raise ValueError("report_type is required")
-    if args.get("selection_criteria") is not None:
-        params["SelectionCriteria"] = args.get("selection_criteria")
+    params["SelectionCriteria"] = args.get("selection_criteria") if args.get("selection_criteria") is not None else {}
     date_from = args.get("date_from")
     date_to = args.get("date_to")
     if date_from is not None or date_to is not None:
@@ -6448,8 +6447,7 @@ def _build_report_params(args: dict[str, Any]) -> dict[str, Any]:
         selection = params.get("SelectionCriteria") or {}
         if selection.get("DateFrom") or selection.get("DateTo"):
             date_range_type = "CUSTOM_DATE"
-    if date_range_type is not None:
-        params["DateRangeType"] = date_range_type
+    params["DateRangeType"] = date_range_type or "YESTERDAY"
 
     fmt = args.get("format") or "TSV"
     params["Format"] = fmt
@@ -7341,9 +7339,25 @@ async def call_tool(name: str, arguments: dict[str, Any] | None = None) -> Any:
             data = hf_metrica_handle(name, ctx, args)
             return _ok_result(ctx, name, data)
         except HFError as exc:
-            return _text_response(hf_payload(tool=name, status="error", message=str(exc)))
+            return _ok_result(ctx, name, hf_payload(tool=name, status="error", message=str(exc)))
         except Exception as exc:  # pragma: no cover
-            return _error_response(name, exc)
+            normalized = normalize_error(name, exc)["error"]
+            logger.error("%s failed: %s", name, normalized.get("message", exc.__class__.__name__))
+            return _ok_result(
+                ctx,
+                name,
+                hf_payload(
+                    tool=name,
+                    status="error",
+                    message=normalized.get("message") or exc.__class__.__name__,
+                    error={
+                        "code": str(normalized.get("error_code") or "upstream_error"),
+                        "type": "upstream",
+                        "retryable": normalized.get("http_status") in {429, 500, 502, 503, 504},
+                        "details": {key: normalized[key] for key in ("provider", "detail", "hint", "request_id", "http_status") if normalized.get(key) is not None},
+                    },
+                ),
+            )
 
     if name.startswith("join.hf."):
         try:

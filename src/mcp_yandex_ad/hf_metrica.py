@@ -74,7 +74,13 @@ def _require_counter_id(args: dict[str, Any]) -> str:
 
 
 def _metric_default(metric: str | None) -> str:
-    return metric or "ym:s:visits"
+    value = (metric or "visits").strip()
+    aliases = {"visits": "ym:s:visits", "users": "ym:s:users", "pageviews": "ym:s:pageviews"}
+    if value in aliases:
+        return aliases[value]
+    if value.startswith("ym:"):
+        return value
+    raise HFError("metric must be a Metrika API metric such as ym:s:visits, or visits/users/pageviews")
 
 
 def _aggregate_by_period(rows: list[dict[str, Any]], *, granularity: str) -> list[dict[str, Any]]:
@@ -240,7 +246,9 @@ def handle(tool: str, ctx: Any, args: dict[str, Any]) -> dict[str, Any]:
         if not date_from or not date_to:
             raise HFError("date_from and date_to are required")
         level = (args.get("level") or "country").lower()
-        dim = "ym:s:geoCountry" if level == "country" else "ym:s:geoCity"
+        if level not in {"country", "city"}:
+            raise HFError("level must be country or city")
+        dim = "ym:s:regionCountry" if level == "country" else "ym:s:regionCity"
         raw, warnings = _fetch_stats_with_pagination(
             ctx,
             {
