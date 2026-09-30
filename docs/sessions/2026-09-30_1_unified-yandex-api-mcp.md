@@ -14,6 +14,7 @@
 - After owner approval, reauthorized only the new deployment with `webmaster:verify`; a live OAuth refresh and full multi-service `yp-api verify` passed.
 - Fixed mandatory `order_by` for Webmaster popular queries and the `/links/internal/broken/` routes. The expanded read-only Webmaster smoke passed 34/39 tools; five lacked safe existing IDs.
 - Backed up and switched only the active Tunnel profile to the new MCP. The Tunnel is active and ready, the control-plane poll passed, and the old Direct container remains healthy.
+- Verified `direct.list_clients` through the installed Yandex connector after cutover; ChatGPT's static app catalog still needs a separate refresh for Webmaster tools.
 
 ## To Do
 

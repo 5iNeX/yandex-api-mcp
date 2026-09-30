@@ -34,7 +34,7 @@ The fork's Linux installer, `yp` concept, Docker deployment and OpenAI Tunnel in
 | Deployed public Logs API guard | Pass: live MCP calls with `create`, `clean`, `cancel` were blocked before provider access |
 | Docker restart and reconnection | Pass; both backends and 151 tools returned after restart |
 | Public mode with pro environment overrides | Pass; TypeScript and Python API guards remained read-only |
-| Draft PR CI | Seven checks passed, including Docker smoke, Python/Node tests and lint |
+| Draft PR and new-repository CI | Pass, including Docker smoke, Python/Node tests and installer matrix |
 | Direct clients, campaigns, adgroups, ads, keywords | Pass with campaign SelectionCriteria where required |
 | Direct report | Pass, actual TSV returned |
 | Metrika counters, goals, Reporting API | Pass |
@@ -46,6 +46,7 @@ The fork's Linux installer, `yp` concept, Docker deployment and OpenAI Tunnel in
 | OAuth refresh | Mocked rotation/401 tests and live refresh of the new token passed; full API probe passed afterward |
 | OpenAI Tunnel new target | Active profile switched; service active, `/healthz` and `/readyz` 200, control-plane poll succeeded |
 | ChatGPT app tool catalog | Still lists the old Direct/Metrika tools; separate "Update tools" UI action is pending owner confirmation |
+| Installed Yandex app read call | `direct.list_clients` succeeded through the connector after Tunnel cutover |
 
 Endpoint paths were compared with current official Webmaster documentation (see audit). No destructive Yandex API call was made.
 
@@ -98,4 +99,4 @@ The old `compose-direct-1` and old Webmaster services still run. Do not alter Pr
 
 ## Remaining limits
 
-The installed ChatGPT Yandex application's static tool catalog remains from the old MCP. A ChatGPT prompt asking for the Webmaster host count returned `0` without a visible tool call, so it is **not** evidence of end-to-end Webmaster access through ChatGPT. The settings page offers "Update tools"; that action is pending action-time owner confirmation because it expands the app's access to the new 151-tool catalog. The tunnel itself is ready and its stdio command starts the new core and Python adapter. Existing website/tool documents outside the new README may still describe the legacy Direct/Metrika-only distribution; the new deployment docs are authoritative for this branch.
+The installed ChatGPT Yandex application's static tool catalog remains from the old MCP. A ChatGPT prompt asking for the Webmaster host count returned `0` without a visible tool call, so it is **not** evidence of end-to-end Webmaster access through ChatGPT. A read-only `direct.list_clients` call through the installed connector succeeded after cutover. The settings page offers "Update tools"; that action is pending action-time owner confirmation because it expands the app's access to the new 151-tool catalog. The tunnel itself is ready and its stdio command starts the new core and Python adapter. Existing website/tool documents outside the new README may still describe the legacy Direct/Metrika-only distribution; the new deployment docs are authoritative for this branch.
