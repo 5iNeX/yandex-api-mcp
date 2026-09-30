@@ -16,7 +16,7 @@ The LXC 123 Tunnel profile now uses the new MCP after `yp-api verify` and the ex
 sudo -n /usr/local/libexec/yandex-api-mcp-stdio
 ```
 
-The root-owned wrapper has a narrow sudoers entry for the `tunnel-client` user and runs `docker exec -i yandex-api-mcp-yandex-api-mcp-1 node gateway/index.mjs`. The prior profile is backed up at `/opt/yandex-api-mcp/backups/tunnel-before-cutover-20260930T053554Z.yaml`. `tunnel-client health --port 8080 --require-control-plane-poll --json` returned ready after cutover. The installed ChatGPT Yandex application's static tool catalog still needs a separate refresh to show new Webmaster tools. Rollback restores that profile and restarts only `tunnel-client.service`. No MCP port, host route, DNS, firewall or interface change is needed.
+The root-owned wrapper has a narrow sudoers entry for the `tunnel-client` user and runs `docker exec -i yandex-api-mcp-yandex-api-mcp-1 node gateway/index.mjs`. The prior profile is backed up at `/opt/yandex-api-mcp/backups/tunnel-before-cutover-20260930T053554Z.yaml`. `tunnel-client health --port 8080 --require-control-plane-poll --json` returned ready after cutover. The owner manually refreshed the installed ChatGPT Yandex application's tool catalog and reports that the new tool is visible. Rollback restores that profile and restarts only `tunnel-client.service`. No MCP port, host route, DNS, firewall or interface change is needed.
 
 ## Security and rollback
 

@@ -52,7 +52,7 @@ curl http://127.0.0.1:8001/healthz
 docker compose ps
 ```
 
-Compose публикует SSE только на `127.0.0.1:8001`; внешний MCP порт не открыт. Для Claude/Codex/Cursor на том же сервере stdio-команда: `docker exec -i yandex-api-mcp-yandex-api-mcp-1 node gateway/index.mjs`. OpenAI Tunnel в LXC 123 переключён на новый MCP и сообщает `ready`; [развёртывание и откат](docs/ru/unified-deployment.md). Каталог инструментов установленного приложения Yandex в ChatGPT требует отдельного обновления, чтобы появились новые Webmaster tools.
+Compose публикует SSE только на `127.0.0.1:8001`; внешний MCP порт не открыт. Для Claude/Codex/Cursor на том же сервере stdio-команда: `docker exec -i yandex-api-mcp-yandex-api-mcp-1 node gateway/index.mjs`. OpenAI Tunnel в LXC 123 переключён на новый MCP и сообщает `ready`; [развёртывание и откат](docs/ru/unified-deployment.md). Владелец вручную обновил каталог инструментов приложения Yandex в ChatGPT и сообщил, что новый инструмент появился.
 
 ## Проверка и неполадки
 

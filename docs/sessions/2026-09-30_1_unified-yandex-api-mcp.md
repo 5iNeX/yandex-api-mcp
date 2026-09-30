@@ -14,8 +14,8 @@
 - After owner approval, reauthorized only the new deployment with `webmaster:verify`; a live OAuth refresh and full multi-service `yp-api verify` passed.
 - Fixed mandatory `order_by` for Webmaster popular queries and the `/links/internal/broken/` routes. The expanded read-only Webmaster smoke passed 34/39 tools; five lacked safe existing IDs.
 - Backed up and switched only the active Tunnel profile to the new MCP. The Tunnel is active and ready, the control-plane poll passed, and the old Direct container remains healthy.
-- Verified `direct.list_clients` through the installed Yandex connector after cutover; ChatGPT's static app catalog still needs a separate refresh for Webmaster tools.
+- Verified `direct.list_clients` through the installed Yandex connector after cutover. The owner manually refreshed ChatGPT's Yandex app catalog and reports that the new tool is visible. A new ChatGPT conversation returned `3 — yandex_webmaster_hosts_list`; its UI did not expose the tool-call trace.
 
 ## To Do
 
-- Refresh the installed ChatGPT Yandex application's tool catalog after action-time owner confirmation, then verify a real Webmaster tool call in ChatGPT.
+- Inspect a post-refresh Webmaster tool-call trace through the installed ChatGPT Yandex app if the UI makes one available; its response has already been observed.

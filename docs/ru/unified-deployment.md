@@ -10,7 +10,7 @@ OAuth scope по умолчанию: `webmaster:hostinfo webmaster:verify direct
 
 ## OpenAI Tunnel
 
-Tunnel в LXC 123 переключён на новый MCP после успешного `yp-api verify` и расширенного read-only smoke Webmaster. Команда профиля: `sudo -n /usr/local/libexec/yandex-api-mcp-stdio`. Root-owned wrapper запускает `docker exec -i yandex-api-mcp-yandex-api-mcp-1 node gateway/index.mjs`; для `tunnel-client` добавлена узкая sudoers-запись. Предыдущий профиль сохранён в `/opt/yandex-api-mcp/backups/tunnel-before-cutover-20260930T053554Z.yaml`. После переключения `tunnel-client health --port 8080 --require-control-plane-poll --json` вернул ready. Каталог инструментов установленного приложения Yandex в ChatGPT обновляется отдельно для появления новых Webmaster tools. Для отката восстановить профиль и перезапустить только Tunnel. Порт наружу и сеть Proxmox менять не требуется.
+Tunnel в LXC 123 переключён на новый MCP после успешного `yp-api verify` и расширенного read-only smoke Webmaster. Команда профиля: `sudo -n /usr/local/libexec/yandex-api-mcp-stdio`. Root-owned wrapper запускает `docker exec -i yandex-api-mcp-yandex-api-mcp-1 node gateway/index.mjs`; для `tunnel-client` добавлена узкая sudoers-запись. Предыдущий профиль сохранён в `/opt/yandex-api-mcp/backups/tunnel-before-cutover-20260930T053554Z.yaml`. После переключения `tunnel-client health --port 8080 --require-control-plane-poll --json` вернул ready. Владелец вручную обновил каталог инструментов приложения Yandex в ChatGPT и сообщил, что новый инструмент появился. Для отката восстановить профиль и перезапустить только Tunnel. Порт наружу и сеть Proxmox менять не требуется.
 
 ## Безопасность и откат
 

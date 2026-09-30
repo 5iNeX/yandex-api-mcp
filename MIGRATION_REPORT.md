@@ -45,7 +45,7 @@ The fork's Linux installer, `yp` concept, Docker deployment and OpenAI Tunnel in
 | Webmaster query and internal-link fixes | Required `order_by` and `/links/internal/broken/` paths verified against live API |
 | OAuth refresh | Mocked rotation/401 tests and live refresh of the new token passed; full API probe passed afterward |
 | OpenAI Tunnel new target | Active profile switched; service active, `/healthz` and `/readyz` 200, control-plane poll succeeded |
-| ChatGPT app tool catalog | Still lists the old Direct/Metrika tools; separate "Update tools" UI action is pending owner confirmation |
+| ChatGPT app tool catalog | Owner manually updated the installed Yandex app's tools; a new ChatGPT conversation returned `3` and named `yandex_webmaster_hosts_list`, though its UI did not expose the underlying tool-call trace |
 | Installed Yandex app read call | `direct.list_clients` succeeded through the connector after Tunnel cutover |
 
 Endpoint paths were compared with current official Webmaster documentation (see audit). No destructive Yandex API call was made.
@@ -99,4 +99,4 @@ The old `compose-direct-1` and old Webmaster services still run. Do not alter Pr
 
 ## Remaining limits
 
-The installed ChatGPT Yandex application's static tool catalog remains from the old MCP. A ChatGPT prompt asking for the Webmaster host count returned `0` without a visible tool call, so it is **not** evidence of end-to-end Webmaster access through ChatGPT. A read-only `direct.list_clients` call through the installed connector succeeded after cutover. The settings page offers "Update tools"; that action is pending action-time owner confirmation because it expands the app's access to the new 151-tool catalog. The tunnel itself is ready and its stdio command starts the new core and Python adapter. Existing website/tool documents outside the new README may still describe the legacy Direct/Metrika-only distribution; the new deployment docs are authoritative for this branch.
+The owner manually refreshed the installed ChatGPT Yandex application's tool catalog and reports that the new tool appears. In a new ChatGPT conversation using that app, a read-only prompt for the Webmaster host count returned `3 — yandex_webmaster_hosts_list`. The ChatGPT UI displayed the result but no underlying tool-call trace, so this is client-level response evidence rather than an independently inspected invocation log. The earlier pre-refresh prompt returned `0` without a visible tool call and is superseded. A read-only `direct.list_clients` call through the installed connector succeeded after Tunnel cutover. The tunnel itself is ready and its stdio command starts the new core and Python adapter. Existing website/tool documents outside the new README may still describe the legacy Direct/Metrika-only distribution; the new deployment docs are authoritative for this branch.
