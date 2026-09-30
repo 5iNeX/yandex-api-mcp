@@ -4,6 +4,8 @@ All notable changes to this MCP project will be documented in this file.
 
 ## 0.1.0 - 2026-09-30 (yandex-api-mcp branch)
 
+- Rewrote the root Russian README as a standalone first-install guide for all six services, OAuth permissions, Cloud keys, project discovery, MCP clients, ChatGPT Tunnel, security and troubleshooting; aligned the English summary and deployment guides.
+- Fixed the new `yp-api` onboarding path: persist requested OAuth scopes when Yandex omits them from token responses, make unconfigured Tunnel optional in `doctor`, and explain that Wordstat uses Cloud credentials rather than Direct OAuth.
 - Repaired live agent report failures: Metrika geo dimensions and metric aliases, required Direct report selection/period defaults, and structured Metrika HF errors. Changed only the Tunnel application unit to restart after a clean exit caused by an interrupted stdio subprocess; live read retests passed.
 - Recorded the owner's manual ChatGPT Yandex tool-catalog refresh and a new ChatGPT response of `3 — yandex_webmaster_hosts_list`; reconfirmed the deployed container, Tunnel health and `yp-api doctor`. The ChatGPT UI did not expose the underlying call trace.
 - Completed Webmaster OAuth reauthorization with `webmaster:verify`, fixed the required popular-query sort and broken-internal-links paths, and passed 34 of 39 live read-only Webmaster tools (five require absent task/request IDs or a user sitemap).

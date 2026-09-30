@@ -1,11 +1,27 @@
 # yandex-api-mcp
 
-One MCP endpoint for Yandex Webmaster, Direct, Metrika, Wordstat, Audience and Search API. The default Docker build is public and read only. The TypeScript core derives from [webkoth/yandex-mcp](https://github.com/webkoth/yandex-mcp) (MIT); the Python adapter retains Wordstat, Audience, Search API and additional read tools from this repository.
+One read-only-by-default MCP server for Yandex Webmaster, Direct, Metrika, Wordstat, Audience, and Search API. It exposes a single MCP endpoint and supports multiple projects with one shared OAuth token.
 
-On Debian/Ubuntu with Docker Engine, Compose v2 and Python 3, run `sudo ./install.sh`, then `sudo yp oauth`, `sudo yp service start`, and `sudo yp doctor`. If `yp` already belongs to an older installation, use `yp-api`. State and secrets live under `/opt/yandex-api-mcp/{state,secrets}` and are mounted into the container, never baked into the image. Compose binds SSE to `127.0.0.1:8001`.
+See the [complete Russian setup guide](README.md) for Yandex OAuth application creation, permissions, Yandex Cloud keys, installation, projects, verification, and MCP clients.
 
-OAuth scopes: Webmaster needs `webmaster:hostinfo webmaster:verify`; Direct needs `direct:api`; Metrika needs `metrika:read` (and `metrika:write` for uploads); Audience needs `audience:read`. Search API uses a separate folder ID and API key in `secrets/yandex.env`. Scope expansion requires a new authorization code; refresh cannot add scopes.
+## Quick start on Debian or Ubuntu
 
-`yp project list|add|remove` manages a token-free project registry. `yp discover`, `yp verify`, `yp doctor`, `yp logs`, and `yp connector info` cover discovery and diagnostics. Project-aware Direct and Metrika tools accept an explicit `project` argument. The gateway runs TypeScript and Python MCP backends and merges their tools; token refresh is automatic and persisted.
+Install Docker Engine, Docker Compose v2, Python 3, and Git. Create a Yandex OAuth application with redirect URI `https://oauth.yandex.ru/verification_code` and the scopes you need: `webmaster:hostinfo` and `webmaster:verify`, `direct:api`, `metrika:read`, and `audience:read`. Direct production API access and account permissions must also be granted by Yandex/the account owner.
 
-Local MCP clients can run `docker exec -i yandex-api-mcp-yandex-api-mcp-1 node gateway/index.mjs` over stdio. The LXC 123 OpenAI Tunnel now targets the new MCP and reports ready. The owner manually refreshed the installed Yandex app's tool catalog in ChatGPT and reports that the new tool is visible. Deployment results, verified calls, limitations, rollback, and commands are in [MIGRATION_REPORT.md](MIGRATION_REPORT.md). Full setup details: [docs/unified-deployment.md](docs/unified-deployment.md).
+```bash
+git clone https://github.com/5iNeX/yandex-api-mcp.git
+cd yandex-api-mcp
+sudo ./install.sh
+sudo yp-api oauth
+sudo yp-api service start
+sudo yp-api doctor
+sudo yp-api discover
+```
+
+The installer stores OAuth state in `/opt/yandex-api-mcp/state/` and application secrets in `/opt/yandex-api-mcp/secrets/`, outside Git and the image. It binds SSE only to `127.0.0.1:8001`. `yp-api verify` performs read-only live API probes.
+
+Wordstat and Search API require a Yandex Cloud folder ID and an API key for a service account with `search-api.webSearch.user`. If key scopes are configured, include `yc.search-api.execute`. Put `YANDEX_SEARCH_API_FOLDER_ID` and `YANDEX_SEARCH_API_API_KEY` in `/opt/yandex-api-mcp/secrets/yandex.env`.
+
+For local MCP clients, use stdio: `docker exec -i yandex-api-mcp-yandex-api-mcp-1 node gateway/index.mjs`. ChatGPT requires a separately created [OpenAI Secure MCP Tunnel](https://developers.openai.com/api/docs/guides/secure-mcp-tunnels); `yp-api` checks an existing Tunnel but does not create OpenAI credentials or the Tunnel automatically.
+
+The default public image blocks writes. A separate pro build has guarded writes and is not published automatically. Project metadata is token-free, while access tokens refresh automatically when a refresh token is available. See [MIGRATION_REPORT.md](MIGRATION_REPORT.md) for live verification and deployment details. License: [Apache-2.0](LICENSE) with [MIT](core/LICENSE) TypeScript core.

@@ -1,19 +1,32 @@
 # Развёртывание yandex-api-mcp
 
-Публичный образ объединяет TypeScript core (Webmaster, Direct, Metrika) и Python-адаптер (Wordstat, Audience, Search API) через один MCP gateway. `/healthz` показывает оба процесса и число инструментов. Docker Compose публикует SSE только на `127.0.0.1:8001`; stdio-команда: `docker exec -i yandex-api-mcp-yandex-api-mcp-1 node gateway/index.mjs`.
+Пошаговая инструкция для новой установки, включая Яндекс OAuth, Search API key и подключение MCP-клиентов, находится в [README](../../README.md). Эта страница описывает эксплуатацию после установки.
 
-## Установка
+## Структура установки
 
-На Debian/Ubuntu нужны Docker Engine, Compose v2 и Python 3. Запустите `sudo ./install.sh`, затем `sudo yp oauth`, `sudo yp service start`, `sudo yp doctor` и `sudo yp verify`. Если старый `yp` уже существует, новый называется `yp-api`. Установщик копирует файлы в `/opt/yandex-api-mcp`, сохраняя `state/` и `secrets/`. Сборка по умолчанию публичная и read-only.
+`sudo ./install.sh` копирует приложение в `/opt/yandex-api-mcp`. Docker Compose запускает один публичный MCP-контейнер с двумя backend-процессами. SSE доступен на `127.0.0.1:8001/sse`; наружу порт не публикуется. `state/oauth.json` содержит обновляемый access/refresh token, `state/projects.json` — профили без копий токена. `secrets/oauth-app.json` и `secrets/yandex.env` содержат данные приложения и ключ Search API. Эти файлы не входят в Git или image.
 
-OAuth scope по умолчанию: `webmaster:hostinfo webmaster:verify direct:api metrika:read audience:read`. Для загрузок в Метрику отдельно нужен `metrika:write`. Wordstat использует доступ Direct. Search API требует `YANDEX_SEARCH_API_FOLDER_ID` и `YANDEX_SEARCH_API_API_KEY` в `secrets/yandex.env`. Токен один для нескольких проектов; `state/projects.json` не хранит токены. Refresh выполняется автоматически. Добавление scope требует новой авторизации.
+`yp-api oauth` запрашивает `webmaster:hostinfo webmaster:verify direct:api metrika:read audience:read` по умолчанию. Wordstat и Search API используют отдельные Yandex Cloud Folder ID и API key. После расширения OAuth scope нужна новая авторизация. Новый access token обновляется автоматически при наличии refresh token.
+
+## Управление
+
+```bash
+sudo yp-api service status
+sudo yp-api doctor
+sudo yp-api discover
+sudo yp-api project list
+sudo yp-api verify
+sudo yp-api logs --tail 80
+```
+
+`verify` выполняет реальные read-вызовы. Если ключ Wordstat/Search API не настроен, их отдельные проверки могут завершиться ошибкой. Добавление или удаление проекта меняет только локальный реестр; после этого выполните `sudo yp-api service restart`.
 
 ## OpenAI Tunnel
 
-Tunnel в LXC 123 переключён на новый MCP после успешного `yp-api verify` и расширенного read-only smoke Webmaster. Команда профиля: `sudo -n /usr/local/libexec/yandex-api-mcp-stdio`. Root-owned wrapper запускает `docker exec -i yandex-api-mcp-yandex-api-mcp-1 node gateway/index.mjs`; для `tunnel-client` добавлена узкая sudoers-запись. Предыдущий профиль сохранён в `/opt/yandex-api-mcp/backups/tunnel-before-cutover-20260930T053554Z.yaml`. После переключения `tunnel-client health --port 8080 --require-control-plane-poll --json` вернул ready. Владелец вручную обновил каталог инструментов приложения Yandex в ChatGPT и сообщил, что новый инструмент появился. Для отката восстановить профиль и перезапустить только Tunnel. Порт наружу и сеть Proxmox менять не требуется.
+OpenAI Secure MCP Tunnel настраивается отдельно с собственным Tunnel ID и runtime API key. Укажите в нём stdio-команду `docker exec -i yandex-api-mcp-yandex-api-mcp-1 node gateway/index.mjs`. Службе нужны автозапуск и `Restart=always`: при временном исчезновении MCP subprocess tunnel-client может завершиться с кодом 0. Проверьте `tunnel-client health --port 8080 --require-control-plane-poll --json`, затем обновите инструменты приложения ChatGPT. [Официальная инструкция OpenAI](https://developers.openai.com/api/docs/guides/secure-mcp-tunnels).
 
-## Безопасность и откат
+## Безопасное обновление и откат
 
-Секреты находятся в host files, не в image и не в переменных Docker Compose. Публичный marker принудительно блокирует запись. В pro-сборке запись требует `confirm:true`, удаление — точное `destructive_confirmation`; лимит batch — 50. Повтор 5xx/сетевых ошибок применяется только к операциям чтения.
+Перед обновлением сохраните защищённые копии `/opt/yandex-api-mcp/state/` и `secrets/`. Получите новую версию исходников, выполните `sudo ./install.sh` и проверьте `sudo yp-api doctor` и `verify`. Установщик сохраняет `state/` и `secrets/`. Публичная сборка блокирует API-записи, включая создание и очистку Logs API export.
 
-Для отката сначала восстановить предыдущий профиль Tunnel из `/opt/yandex-api-mcp/backups/tunnel-before-cutover-20260930T053554Z.yaml` и перезапустить только `tunnel-client.service`, затем остановить новый Compose: `docker compose -p yandex-api-mcp -f /opt/yandex-api-mcp/compose.yandex-api-mcp.yml stop`. Старый `/opt/yandex-mcp/` продолжает работать. Backup сохранены в `backups/` обеих установок. Сеть Proxmox и LXC не изменять.
+Для отката к предыдущему image восстановите сохранённый image/source и только конфигурацию этого приложения. Секреты и OAuth state восстанавливайте осторожно: refresh token мог смениться после создания backup. Не требуется менять сеть, DNS, маршрутизацию или firewall.

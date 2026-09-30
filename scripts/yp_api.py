@@ -31,7 +31,7 @@ SCOPES = {
     "metrika": ["metrika:read"],
     "metrika-write": ["metrika:write"],
     "audience": ["audience:read"],
-    "wordstat": ["direct:api"],
+    "wordstat": [],  # Uses Yandex Cloud Search API credentials, not Yandex OAuth.
 }
 
 
@@ -123,6 +123,8 @@ def oauth(services: list[str]) -> None:
         raise RuntimeError("Run 'yp setup' first")
     selected = services or ["webmaster", "direct", "metrika", "audience", "wordstat"]
     scopes = sorted({scope for name in selected for scope in SCOPES[name]})
+    if not scopes:
+        raise RuntimeError("Wordstat uses a Yandex Cloud folder ID and API key; configure secrets/yandex.env")
     params = urlencode({"response_type": "code", "client_id": app["client_id"],
                         "redirect_uri": app.get("redirect_uri", "https://oauth.yandex.ru/verification_code"),
                         "scope": " ".join(scopes)})
@@ -133,7 +135,9 @@ def oauth(services: list[str]) -> None:
     data = token_request({"grant_type": "authorization_code", "code": code,
                           "client_id": app["client_id"], "client_secret": app["client_secret"],
                           "redirect_uri": app.get("redirect_uri", "https://oauth.yandex.ru/verification_code")})
-    save_token(data)
+    # Yandex may omit scope in the token response. Keep the requested scopes for diagnostics;
+    # actual access is still confirmed by read-only API probes.
+    save_token({**data, "scope": data.get("scope") or " ".join(scopes)})
     print("OAuth token saved with mode 0600; token value was not printed.")
 
 
@@ -213,6 +217,7 @@ def projects(action: str, ident: str | None, name: str | None, login: str | None
 
 def doctor() -> int:
     checks = []
+    optional = []
     checks.append(("Docker", shutil.which("docker") is not None))
     checks.append(("Compose config", COMPOSE.exists()))
     checks.append(("OAuth app", bool(load_json(APP))))
@@ -224,7 +229,10 @@ def doctor() -> int:
         checks.append((f"Permissions {path.name}", path.exists() and path.stat().st_mode & 0o007 == 0
                        and (path == APP or path.stat().st_mode & 0o070 == 0)))
     scopes = set(state.get("scope", "").split())
-    checks.append(("Webmaster OAuth scopes", set(SCOPES["webmaster"]).issubset(scopes)))
+    if "webmaster:hostinfo" in scopes or "webmaster:verify" in scopes:
+        optional.append(("Requested Webmaster OAuth scopes", set(SCOPES["webmaster"]).issubset(scopes)))
+    else:
+        optional.append(("Requested Webmaster OAuth scopes", None))
     try:
         with urlopen("http://127.0.0.1:8001/healthz", timeout=5) as response:
             health = json.load(response)
@@ -234,23 +242,40 @@ def doctor() -> int:
         checks.extend([("MCP process and health", False), ("Both backends", False)])
     tunnel = subprocess.run(["systemctl", "is-active", "tunnel-client.service"],
                             capture_output=True, text=True, check=False) if shutil.which("systemctl") else None
-    checks.append(("Tunnel service", tunnel is not None and tunnel.stdout.strip() == "active"))
+    if tunnel is not None and tunnel.returncode == 0:
+        optional.append(("Tunnel service", True))
+    elif (ROOT / "tunnel-candidate.yaml").exists():
+        optional.append(("Tunnel service", False))
+    else:
+        optional.append(("Tunnel service (optional)", None))
     docker_service = subprocess.run(["systemctl", "is-active", "docker.service"],
                                     capture_output=True, text=True, check=False) if shutil.which("systemctl") else None
     checks.append(("Docker systemd service", docker_service is not None and docker_service.stdout.strip() == "active"))
-    checks.append(("Tunnel candidate", (ROOT / "tunnel-candidate.yaml").exists()))
     expiry = int(state.get("issued_at") or 0) + int(state.get("expires_in") or 0)
     if expiry:
         checks.append(("OAuth not expired", expiry > time.time()))
     if state.get("access_token"):
         try:
-            api_json("https://api.webmaster.yandex.net/v4/user", token=state["access_token"])
+            if "webmaster:hostinfo" in scopes:
+                api_json("https://api.webmaster.yandex.net/v4/user", token=state["access_token"])
+            elif "metrika:read" in scopes or "metrika:write" in scopes:
+                api_json("https://api-metrika.yandex.net/management/v1/counters", token=state["access_token"])
+            elif "direct:api" in scopes:
+                api_json("https://api.direct.yandex.com/json/v5/campaigns", token=state["access_token"],
+                         bearer=True, body={"method": "get", "params": {"FieldNames": ["Id"],
+                                                                  "Page": {"Limit": 1, "Offset": 0}}})
+            elif "audience:read" in scopes:
+                api_json("https://api-audience.yandex.com/v1/management/user/info", token=state["access_token"])
+            else:
+                raise RuntimeError("No supported API probe for selected scopes")
             checks.append(("Yandex API connectivity", True))
         except Exception:
             checks.append(("Yandex API connectivity", False))
     for label, good in checks:
         print(f"{'OK' if good else 'FAIL'}  {label}")
-    return 0 if all(good for _, good in checks) else 1
+    for label, good in optional:
+        print(f"{'SKIP' if good is None else 'OK' if good else 'FAIL'}  {label}")
+    return 0 if all(good for _, good in checks) and all(good is not False for _, good in optional) else 1
 
 
 def main() -> int:
@@ -302,7 +327,7 @@ def main() -> int:
         elif args.command == "connector":
             print("SSE: http://127.0.0.1:8001/sse")
             print(f"Stdio: docker exec -i {CONTAINER} node gateway/index.mjs")
-            print("ChatGPT Tunnel: existing tunnel-client profile remains on the old MCP until cutover.")
+            print("ChatGPT: install and configure OpenAI Secure MCP Tunnel separately; point its stdio command at the line above.")
         elif args.command == "logs":
             compose("logs", "--tail", str(args.tail), check=False)
     except (RuntimeError, OSError, ValueError) as exc:

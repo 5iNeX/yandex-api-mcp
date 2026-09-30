@@ -1,9 +1,12 @@
 """Minimal checks for the standalone administrator CLI's persistent files."""
 
 import importlib.util
+import io
 import json
 from pathlib import Path
 import stat
+import time
+import pytest
 
 
 def load_cli(tmp_path, monkeypatch):
@@ -59,3 +62,33 @@ def test_oauth_requests_service_specific_scopes(tmp_path, monkeypatch, capsys):
     assert "direct%3Aapi" in output
     assert "app-secret" not in output
     assert "ACCESS_SECRET_VALUE" not in output
+    saved = json.loads(cli.OAUTH.read_text())
+    assert set(saved["scope"].split()) == {"webmaster:hostinfo", "webmaster:verify", "direct:api"}
+
+
+def test_wordstat_only_oauth_explains_cloud_credentials(tmp_path, monkeypatch):
+    cli = load_cli(tmp_path, monkeypatch)
+    cli.secure_json(cli.APP, {"client_id": "app-id", "client_secret": "secret"})
+    with pytest.raises(RuntimeError, match="Yandex Cloud folder ID and API key"):
+        cli.oauth(["wordstat"])
+
+
+def test_doctor_allows_unconfigured_optional_tunnel(tmp_path, monkeypatch, capsys):
+    cli = load_cli(tmp_path, monkeypatch)
+    cli.secure_json(cli.APP, {"client_id": "app-id", "client_secret": "secret"})
+    cli.secure_json(cli.OAUTH, {"access_token": "fixture", "refresh_token": "fixture",
+                                    "scope": "webmaster:hostinfo webmaster:verify",
+                                    "issued_at": int(time.time()), "expires_in": 3600})
+    cli.secure_json(cli.PROJECTS, {"accounts": [{"id": "default"}]})
+    cli.COMPOSE.touch()
+    monkeypatch.setattr(cli.shutil, "which", lambda _: "/usr/bin/fixture")
+    monkeypatch.setattr(cli.subprocess, "run", lambda argv, **_: type("Result", (), {
+        "returncode": 3 if "tunnel-client.service" in argv else 0,
+        "stdout": "inactive" if "tunnel-client.service" in argv else "active",
+    })())
+    monkeypatch.setattr(cli, "urlopen", lambda *_args, **_kwargs: io.BytesIO(
+        b'{"status":"ok","backends":["core","services"]}'))
+    monkeypatch.setattr(cli, "api_json", lambda *_args, **_kwargs: {"user_id": 1})
+
+    assert cli.doctor() == 0
+    assert "SKIP  Tunnel service (optional)" in capsys.readouterr().out
